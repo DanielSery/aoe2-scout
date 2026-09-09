@@ -25,8 +25,9 @@ matches no profile page and is not comparable to a 1v1 rating.
 
 Ladder ratings from both boards, converted onto one scale, corrected for playing with
 a fixed group, and then corrected again toward a head-to-head fit over **54 164 ranked
-matches** that never reads any tracked player's own rating. The Method view in the page
-walks through it.
+matches** that never reads any tracked player's own rating. The **Method** view in the
+page walks through the whole derivation, and every player's name links to their
+aoe2insights profile so the inputs can be checked.
 
 The estimator is scored against that head-to-head fit as an independent arbiter, and
 the honest summary is in the source repo: the level machinery agrees with it closely,
