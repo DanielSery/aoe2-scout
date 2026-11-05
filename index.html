@@ -4799,13 +4799,56 @@ function openWait(e) {
   OPEN.err = e.message;
 }
 function openGot() { OPEN.pause = 0; OPEN.err = null; }
+/* What Openings has read, kept in this browser between visits (Daniel, 2026-11-05: "we could cache
+   some small data, about the table, what matches ids were downloaded"): a game's answer, or that it
+   cannot be read, under the reader's signature (`replays.reader.answered`), and that Microsoft has no
+   replay, which no signature changes. A page opened from a disk asked for every game again on every
+   visit - its reader keeps nothing there - and Microsoft refuses a reader for ten minutes ("I still
+   hit limit with Microsoft"). An answer read under older rules stands where the replay has gone. */
+const OPEN_DB = (() => {
+  let db = null;
+  const open = () => db || (db = new Promise(ok => {
+    try {
+      const r = indexedDB.open("scout-openings", 1);
+      r.onupgradeneeded = () => r.result.createObjectStore("games");
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => ok(null);
+    } catch (e) { ok(null); }
+  }));
+  const run = (mode, f) => open().then(d => d && new Promise(ok => {
+    try {
+      const tx = d.transaction("games", mode), q = f(tx.objectStore("games"));
+      tx.oncomplete = () => ok(q.result);
+      tx.onerror = tx.onabort = () => ok(null);
+    } catch (e) { ok(null); }
+  }));
+  return { get: k => run("readonly", s => s.get(k)), put: (k, v) => run("readwrite", s => s.put(v, k)) };
+})();
+let OPEN_SIG = null, OPEN_SIG_NOW = null;
+const openSig = () => OPEN_SIG || (OPEN_SIG = askBuilds("answered", []).then(
+  sig => (OPEN_SIG_NOW = sig), e => { OPEN_SIG = null; throw e; }));
 async function openOne(g) {
-  const key = openKey(g);
+  const key = openKey(g), kept = await OPEN_DB.get(key);
   try {
-    OPEN.read.set(key, await askBuilds("openings", [g.matchId, g.profileId]));
+    const sig = await openSig();
+    // a game Microsoft no longer has is never asked for again, whatever read it
+    if (kept && (kept.gone || kept.sig === sig)) {
+      OPEN.read.set(key, kept.answer ? { ...kept.answer, ...(kept.sig === sig ? {} : { stale: true }) } : kept.failed);
+      openGot();
+      return;
+    }
+    const answer = await askBuilds("openings", [g.matchId, g.profileId]);
+    OPEN.read.set(key, answer);
+    OPEN_DB.put(key, { sig, answer, ...(answer.stale ? { gone: true } : {}) });
     openGot();
   } catch (e) {
-    if (e.kind === "lasting" || e.kind === "gone") { OPEN.read.set(key, { error: e.message, gone: e.kind === "gone" }); openGot(); }
+    if (e.kind === "lasting" || e.kind === "gone") {
+      const failed = { error: e.message, gone: e.kind === "gone" };
+      const keep = kept && kept.answer && failed.gone;
+      OPEN.read.set(key, keep ? { ...kept.answer, stale: true } : failed);
+      OPEN_DB.put(key, { sig: keep ? kept.sig : OPEN_SIG_NOW, ...(keep ? { answer: kept.answer } : { failed }), gone: failed.gone });
+      openGot();
+    }
     else openWait(e);
   }
 }
