@@ -471,6 +471,7 @@ svg a.who:hover text { text-decoration: underline; }
 #tip .otip .otime :is(.oa1, .oa2, .oa3) { background-image: repeating-linear-gradient(90deg,
   transparent 0 calc(var(--box) - 1px), rgb(255 255 255 / .3) calc(var(--box) - 1px) var(--box)); }
 #tip .otip .oup { background-color: var(--o-up); color: var(--o-up-ink); }
+#tip .otip .otc { background-color: var(--ink-2); color: var(--surface); }
 #tip .otip .oa1 { background-color: var(--oa-1); color: var(--oa-ink-1); }
 #tip .otip .oa2 { background-color: var(--oa-2); color: var(--oa-ink-2); }
 #tip .otip .oa3 { background-color: var(--oa-3); color: var(--oa-ink-3); }
@@ -895,7 +896,9 @@ svg.bdragging { user-select: none; }
       main Town Centre's work in a typical game. The age-ups are blocks as long as they took. The
       rest is villagers, in boxes of 25 seconds, the time to train one. The number is how many
       villagers one busy Town Centre would make in that age. Dark Age's includes the starting ones.
-      Time spent on Town Centre techs like Loom is not counted as villagers. Anything past 25
+      Time spent on Town Centre techs like Loom is not counted as villagers. The techs most of a
+      build's games researched are blocks of their own, placed when they were done, not clicked.
+      Anything past 25
       minutes is not shown. Click a part of a bar, or a dot, to list its games. Each one opens as a
       build card in the Builds tab.</p>
       <p>Below the bars, a dot for each group shows how they did against what the ratings expected.
@@ -1511,9 +1514,11 @@ const REFIT = (() => {
     }
     return out;
   }
-  const reachedBack = (terms, ref) => ["1v1", "team"].some(b => {
-    const have = terms.filter(t => t.board === b && t.day > ref - P.c.window).reduce((s, t) => s + evens(t), 0);
-    return have > 0 && have < P.c.floor;
+  // whether a board's window holds some evidence but under the floor, older games counted in
+  const short = (terms, ref) => ["1v1", "team"].some(b => {
+    const on = terms.filter(t => t.board === b && t.day > ref - P.c.reach && t.day <= ref);
+    const near = on.filter(t => t.day > ref - P.c.window).reduce((s, t) => s + evens(t), 0);
+    return near > 0 && on.reduce((s, t) => s + evens(t), 0) < P.c.floor;
   });
   const popOf = (pool) => pool ? "pool" : "field";
 
@@ -1544,21 +1549,20 @@ const REFIT = (() => {
   }
 
   /* A row refitted whole on its own downloaded games, the window ending today: a player the
-     build never measured, or a board the floor would reach back for. */
+     build never measured, or a board the floor would reach back for. Two years are downloaded, as
+     the build reads a player, so a stack is counted as `site.records` counts it (Daniel,
+     2026-11-05: "The minute for the full analysis is ok to wait"); only the window's games, and
+     the older ones the floor still wants, are read into rows. */
   async function refit(i, ids, pop, step, ref = today()) {
-    const pages = pager(ids, step);
-    const crawl = X.end + P.crawl * 6e4;
-    let ms = await pages.more(o => dayOf(o) <= ref - P.c.window), terms;
-    for (;;) {
-      ms = ms.filter(m => dayOf(m.started) > ref - P.c.reach);
-      ms.forEach(m => { m.fresh = Date.parse(m.started) > crawl; });
-      const seen = together(ms);
-      terms = (await rows(ms, i >= P.players.length)).map(x => term(x, i, seen, pop));
-      const oldest = pages.all.length ? dayOf(pages.all[pages.all.length - 1].started) : ref;
-      // the floor wants older games, and there may be some
-      if (!reachedBack(terms, ref) || pages.done || oldest <= ref - P.c.reach) break;
-      ms = await pages.more(o => dayOf(o) <= oldest - 60 || dayOf(o) <= ref - P.c.reach);
-    }
+    const crawl = X.end + P.crawl * 6e4, all = i >= P.players.length;
+    const ms = (await pager(ids, step).more(o => dayOf(o) <= ref - P.c.reach))
+      .filter(m => dayOf(m.started) > ref - P.c.reach);
+    ms.forEach(m => { m.fresh = Date.parse(m.started) > crawl; });
+    const seen = together(ms);
+    const read = async some => (await rows(some, all)).map(x => term(x, i, seen, pop));
+    let terms = await read(ms.filter(m => dayOf(m.started) > ref - P.c.window));
+    const old = ms.filter(m => dayOf(m.started) <= ref - P.c.window);
+    for (let k = 0; k < old.length && short(terms, ref); k += 100) terms = terms.concat(await read(old.slice(k, k + 100)));
     const used = windowed(terms, ref);
     return { ...solve(used, {}, {}, pop), games: used.length, fresh: null };
   }
@@ -4850,17 +4854,47 @@ function panelOpenings(rows, y) {
   const fits = (w, n) => w >= 6 * String(n).length + 4;
   const inTime = t => t != null && t <= OPEN_HORIZON ? t : Infinity;
   // one game's villagers by each click, infinite from the first click past 25 minutes or missing
+  // how much of [a, b] lies inside [c, d]
+  const overlap = (a, b, c, d) => Math.max(0, Math.min(b, d) - Math.max(a, c));
   const paceOf = o => {
     const a = o.ages || {}, techs = o.techs || [];
     let n = o.start || 3, since = 0;
     return OPEN_UPS.map(([age]) => {
       const click = a[age] && a[age][0];
       if (!isFinite(n) || click == null || click > OPEN_HORIZON) return n = Infinity;
-      const busy = techs.reduce((s, [, t, len]) => s + (since <= t && t < click ? len : 0), 0);
+      const busy = techs.reduce((s, [, t, len]) => s + overlap(t, t + len, since, click), 0);
       n += (click - since - busy) / OPEN_VILLAGER;
       since = a[age][1];
       return n;
     });
+  };
+  /* The Town Centre techs most of the games researched in an age, each a block of its median time
+     ending its median distance before the age-up's click (Daniel, 2026-11-05: "there is often a
+     villager done after the loom which is always never the case for high level players, it could
+     be the block in the TC bar"). Dated when it was done, behind whatever was queued ahead of it
+     (`replays.reader._tc_techs`), not when clicked: a Loom finished as the age-up started sits
+     against it. [start, end, label], latest first. */
+  const techBlocks = (es, k, age, at, from) => {
+    const by = new Map(), had = es.filter(e => (e.o.ages || {})[age]);
+    had.forEach(e => {
+      const a = e.o.ages, prev = k ? (a[OPEN_UPS[k - 1][0]] || [0, 0])[1] : 0;
+      (e.o.techs || []).forEach(([name, t, len]) => {
+        if (t + len <= prev || t + len > a[age][1]) return;
+        if (!by.has(name)) by.set(name, []);
+        by.get(name).push([Math.max(0, a[age][0] - t - len), len]);
+      });
+    });
+    const out = [];
+    let cursor = at;
+    [...by.entries()].filter(([, xs]) => 2 * xs.length >= had.length)
+      .map(([name, xs]) => [name, medianOf(xs.map(x => x[0])), medianOf(xs.map(x => x[1]))])
+      .sort((x, y) => x[1] - y[1])
+      .forEach(([name, before, len]) => {
+        const end = Math.max(from, Math.min(at - before, cursor)), start = Math.max(from, end - len);
+        out.push([start, end, name.split(" ").map(w => w[0]).join("")]);
+        cursor = start;
+      });
+    return out;
   };
   const timeBar = es => {
     const paces = es.map(e => paceOf(e.o)), ages = e => e.o.ages || {};
@@ -4873,7 +4907,16 @@ function panelOpenings(rows, y) {
       if (!isFinite(at) || !isFinite(n)) break;
       const took = es.filter(e => ages(e)[age]).map(e => ages(e)[age][1] - ages(e)[age][0]);
       const len = took.length ? medianOf(took) : 0;
-      out += part(`oa${k + 1}`, at - t, Math.round(n)) + part("oup", len, letter);
+      // the villagers either side of the techs, the age's count on the longest stretch of them
+      const techs = techBlocks(es, k, age, Math.max(at, t), t).reverse();
+      const gaps = [], edges = [t, ...techs.flatMap(([a, b]) => [a, b]), Math.max(at, t)];
+      for (let i = 0; i < edges.length; i += 2) gaps.push(edges[i + 1] - edges[i]);
+      const most = gaps.indexOf(Math.max(...gaps));
+      gaps.forEach((g, i) => {
+        if (g > 0.5) out += part(`oa${k + 1}`, g, i === most ? Math.round(n) : "");
+        if (techs[i]) out += part("otc", techs[i][1] - techs[i][0], techs[i][2]);
+      });
+      out += part("oup", len, letter);
       t = Math.max(t, at) + len;
     }
     return out;
@@ -4906,7 +4949,7 @@ function panelOpenings(rows, y) {
     const table = `<div class="ob" style="grid-template-columns:auto ${OPEN_TIP_BAR}px ${OPEN_TIME_BAR}px">`
       + `<span></span><span class="k">${swatch("var(--o-won)")}won ${swatch("var(--o-lost)")}lost</span><span class="k">${
         ["Dark", "Feudal", "Castle"].map((a, k) => `${swatch(`var(--oa-${k + 1})`)}${a}`).join(" ")} ${
-        swatch("var(--o-up)")}age-up</span>`
+        swatch("var(--o-up)")}age-up ${swatch("var(--ink-2)")}tech</span>`
       // the group first (Daniel, 2026-11-05: "first line Total and there should be the total win/lose
       // in the category"), its builds on a scale of their own, the commonest full width ("The total
       // should have different scaling than the others, so the different builds would not have all
