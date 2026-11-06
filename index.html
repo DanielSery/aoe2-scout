@@ -466,70 +466,75 @@ svg a.who:hover text { text-decoration: underline; }
 #tip .otip .oh { font-weight: 700; font-size: 13px; }
 #tip .otip .osw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 #tip .otip .os { color: var(--muted); font-size: 11.5px; }
-:is(#propen, #metaopen) .pctl select { font: inherit; font-size: 12.5px; color: var(--ink); background: var(--surface);
+:is(#propen, #metaopen, #tip) .pctl select { font: inherit; font-size: 12.5px; color: var(--ink); background: var(--surface);
   border: 1px solid var(--border); border-radius: 7px; padding: 3px 6px; max-width: 220px; }
-:is(#propen, #metaopen) .oempty { display: flex; justify-content: center; padding: 14px 0 8px; }
-:is(#propen, #metaopen) [data-openfocus] { cursor: pointer; }
-:is(#propen, #metaopen) .olist { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--grid); }
-:is(#propen, #metaopen) .olisthead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
-:is(#propen, #metaopen) .olisthead .ghost { padding: 2px 8px; }
-:is(#propen, #metaopen) .oscroll { max-height: 520px; overflow: auto; }
-:is(#propen, #metaopen) .olist table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-:is(#propen, #metaopen) .olist td:nth-child(3) { width: 100%; }
-:is(#propen, #metaopen) .olist .ovs { display: inline-flex; align-items: center; gap: 4px; }
-:is(#propen, #metaopen) .olist .ovs img { width: 16px; height: 16px; }
-:is(#propen, #metaopen) .olist th { text-align: left; padding: 9px 6px 3px; }
-:is(#propen, #metaopen) .olist thead th { z-index: 1; padding: 2px 6px 4px; font-weight: 400; text-transform: none; letter-spacing: normal; cursor: default; }
-:is(#propen, #metaopen) .olist tr.ogh th { padding-top: 16px; font-size: 13.5px; }
-:is(#propen, #metaopen) .olist th .mk { font-weight: 400; margin-left: 6px; }
-:is(#propen, #metaopen) .olist td { padding: 3px 12px 3px 6px; border-top: 1px solid var(--grid); white-space: nowrap; text-align: left; }
-:is(#propen, #metaopen) .olist td:first-child { padding-left: 18px; }
-:is(#propen, #metaopen) .olist td.k { color: var(--muted); }
-:is(#propen, #metaopen) .olist td:last-child { text-align: right; }
-:is(#propen, #metaopen) .olist tr.oshown td { background: var(--stripe); }
-:is(#propen, #metaopen) .olist .obuild:not(.open) tr:not(.obh) { display: none; }
-:is(#propen, #metaopen) .olist tr.obh, :is(#propen, #metaopen) .olist tr.ogh { cursor: pointer; }
-:is(#propen, #metaopen) .olist tbody[hidden] { display: none; }
-:is(#propen, #metaopen) .olist tr.ogh .orow > :first-child::before { content: "▸"; display: inline-block; width: 1em; color: var(--muted); }
-:is(#propen, #metaopen) .olist .ogroup.open tr.ogh .orow > :first-child::before { content: "▾"; }
-:is(#propen, #metaopen) .olist tr.obh .orow > :first-child::before { content: "▸"; display: inline-block; width: 1em; color: var(--muted); }
-:is(#propen, #metaopen) .olist .obuild.open tr.obh .orow > :first-child::before { content: "▾"; }
-:is(#propen, #metaopen) .olist .ghost { font-size: 11.5px; padding: 2px 9px; }
-:is(#propen, #metaopen) .olist a.ghost { display: inline-block; margin-left: 4px; text-decoration: none; }
-:is(#propen, #metaopen) .olist .osw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
-:is(#propen, #metaopen) .olist .orow { display: grid; grid-template-columns: 200px var(--record) var(--time) var(--civs); gap: 0 16px; align-items: center; }
-:is(#propen, #metaopen) .olist .orow > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-:is(#propen, #metaopen) .olist .orow .k { color: var(--muted); font-size: 11px; }
-:is(#propen, #metaopen) .olist.otwo .orow { grid-template-columns: 200px var(--record) var(--time) var(--time); }
-:is(#propen, #metaopen) .olist .opl { color: #fff; }
-:is(#propen, #metaopen) .olist .obar { display: flex; gap: 2px; height: 14px; }
+:is(#propen, #metaopen, #tip) .oempty { display: flex; justify-content: center; padding: 14px 0 8px; }
+:is(#propen, #metaopen, #tip) [data-openfocus] { cursor: pointer; }
+:is(#propen, #metaopen, #tip) .olist { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--grid); }
+/* a build's ways, drawn in its bar's hover as the bar itself is */
+#tip:has(.oways) { max-width: none; }
+#tip .olist.oways { margin: 0; padding: 0; border: 0; width: 380px; }
+#tip .oway { margin-top: 7px; }
+#tip .oway > div { margin-bottom: 2px; }
+:is(#propen, #metaopen, #tip) .olisthead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+:is(#propen, #metaopen, #tip) .olisthead .ghost { padding: 2px 8px; }
+:is(#propen, #metaopen, #tip) .oscroll { max-height: 520px; overflow: auto; }
+:is(#propen, #metaopen, #tip) .olist table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+:is(#propen, #metaopen, #tip) .olist td:nth-child(3) { width: 100%; }
+:is(#propen, #metaopen, #tip) .olist .ovs { display: inline-flex; align-items: center; gap: 4px; }
+:is(#propen, #metaopen, #tip) .olist .ovs img { width: 16px; height: 16px; }
+:is(#propen, #metaopen, #tip) .olist th { text-align: left; padding: 9px 6px 3px; }
+:is(#propen, #metaopen, #tip) .olist thead th { z-index: 1; padding: 2px 6px 4px; font-weight: 400; text-transform: none; letter-spacing: normal; cursor: default; }
+:is(#propen, #metaopen, #tip) .olist tr.ogh th { padding-top: 16px; font-size: 13.5px; }
+:is(#propen, #metaopen, #tip) .olist th .mk { font-weight: 400; margin-left: 6px; }
+:is(#propen, #metaopen, #tip) .olist td { padding: 3px 12px 3px 6px; border-top: 1px solid var(--grid); white-space: nowrap; text-align: left; }
+:is(#propen, #metaopen, #tip) .olist td:first-child { padding-left: 18px; }
+:is(#propen, #metaopen, #tip) .olist td.k { color: var(--muted); }
+:is(#propen, #metaopen, #tip) .olist td:last-child { text-align: right; }
+:is(#propen, #metaopen, #tip) .olist tr.oshown td { background: var(--stripe); }
+:is(#propen, #metaopen, #tip) .olist .obuild:not(.open) tr:not(.obh) { display: none; }
+:is(#propen, #metaopen, #tip) .olist tr.obh, :is(#propen, #metaopen, #tip) .olist tr.ogh { cursor: pointer; }
+:is(#propen, #metaopen, #tip) .olist tbody[hidden] { display: none; }
+:is(#propen, #metaopen, #tip) .olist tr.ogh .orow > :first-child::before { content: "▸"; display: inline-block; width: 1em; color: var(--muted); }
+:is(#propen, #metaopen, #tip) .olist .ogroup.open tr.ogh .orow > :first-child::before { content: "▾"; }
+:is(#propen, #metaopen, #tip) .olist tr.obh .orow > :first-child::before { content: "▸"; display: inline-block; width: 1em; color: var(--muted); }
+:is(#propen, #metaopen, #tip) .olist .obuild.open tr.obh .orow > :first-child::before { content: "▾"; }
+:is(#propen, #metaopen, #tip) .olist .ghost { font-size: 11.5px; padding: 2px 9px; }
+:is(#propen, #metaopen, #tip) .olist a.ghost { display: inline-block; margin-left: 4px; text-decoration: none; }
+:is(#propen, #metaopen, #tip) .olist .osw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+:is(#propen, #metaopen, #tip) .olist .orow { display: grid; grid-template-columns: 200px var(--record) var(--time) var(--civs); gap: 0 16px; align-items: center; }
+:is(#propen, #metaopen, #tip) .olist .orow > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:is(#propen, #metaopen, #tip) .olist .orow .k { color: var(--muted); font-size: 11px; }
+:is(#propen, #metaopen, #tip) .olist.otwo .orow { grid-template-columns: 200px var(--record) var(--time) var(--time); }
+:is(#propen, #metaopen, #tip) .olist .opl { color: #fff; }
+:is(#propen, #metaopen, #tip) .olist .obar { display: flex; gap: 2px; height: 14px; }
 #metaopen .olist .orec { display: flex; align-items: center; gap: 6px; }
 #metaopen .olist .owr { font: normal 700 11.5px system-ui, sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
-:is(#propen, #metaopen) .olist .obar i { flex: none; height: 14px; border-radius: 2px; overflow: hidden;
+:is(#propen, #metaopen, #tip) .olist .obar i { flex: none; height: 14px; border-radius: 2px; overflow: hidden;
   font: normal 700 10px/14px system-ui, sans-serif; text-align: center; }
-:is(#propen, #metaopen) .olist .otime { gap: 0; height: 17px; }
-:is(#propen, #metaopen) .olist .otime i { box-sizing: border-box; border-left: 1px solid var(--surface); height: 17px; line-height: 17px; }
-:is(#propen, #metaopen) .olist .ocivs i { box-sizing: border-box; display: flex; align-items: center; gap: 2px; padding-left: 1px; background: var(--stripe); color: var(--ink-2); text-align: left; cursor: default; }
-:is(#propen, #metaopen) .olist .ocivs img { width: 14px; height: 14px; flex: none; }
-:is(#propen, #metaopen) .olist .ocivs .omore { justify-content: center; background: var(--grid); color: var(--muted); }
-:is(#propen, #metaopen) .olist .oup { background-color: var(--o-up); color: var(--o-up-ink); }
-:is(#propen, #metaopen) .olist .orows { display: flex; flex-direction: column; gap: 2px; }
-:is(#propen, #metaopen) .olist .ounits { position: relative; display: block; }
-:is(#propen, #metaopen) .olist .ounits i { position: absolute; top: 0; height: 10px; box-sizing: border-box; padding: 0 2px; border-radius: 2px;
+:is(#propen, #metaopen, #tip) .olist .otime { gap: 0; height: 17px; }
+:is(#propen, #metaopen, #tip) .olist .otime i { box-sizing: border-box; border-left: 1px solid var(--surface); height: 17px; line-height: 17px; }
+:is(#propen, #metaopen, #tip) .olist .ocivs i { box-sizing: border-box; display: flex; align-items: center; gap: 2px; padding-left: 1px; background: var(--stripe); color: var(--ink-2); text-align: left; cursor: default; }
+:is(#propen, #metaopen, #tip) .olist .ocivs img { width: 14px; height: 14px; flex: none; }
+:is(#propen, #metaopen, #tip) .olist .ocivs .omore { justify-content: center; background: var(--grid); color: var(--muted); }
+:is(#propen, #metaopen, #tip) .olist .oup { background-color: var(--o-up); color: var(--o-up-ink); }
+:is(#propen, #metaopen, #tip) .olist .orows { display: flex; flex-direction: column; gap: 2px; }
+:is(#propen, #metaopen, #tip) .olist .ounits { position: relative; display: block; }
+:is(#propen, #metaopen, #tip) .olist .ounits i { position: absolute; top: 0; height: 10px; box-sizing: border-box; padding: 0 2px; border-radius: 2px;
   overflow: hidden; white-space: nowrap; color: #fff; font: normal 600 8.5px/10px system-ui, sans-serif; }
-:is(#propen, #metaopen) .olist .ou-army { background: var(--ou-army); }
-:is(#propen, #metaopen) .olist .ou-economy { background: var(--ou-eco); }
-:is(#propen, #metaopen) .olist .ounits .ou-upgrade { width: 3px; padding: 0; border-radius: 1px; overflow: visible;
+:is(#propen, #metaopen, #tip) .olist .ou-army { background: var(--ou-army); }
+:is(#propen, #metaopen, #tip) .olist .ou-economy { background: var(--ou-eco); }
+:is(#propen, #metaopen, #tip) .olist .ounits .ou-upgrade { width: 3px; padding: 0; border-radius: 1px; overflow: visible;
   background: var(--o-tc); box-shadow: 0 0 0 1px var(--surface); }
 /* a 3px mark is too narrow to point at */
-:is(#propen, #metaopen) .olist .ou-upgrade::before { content: ""; position: absolute; inset: -1px -3px; }
-:is(#propen, #metaopen) .olist .otc { background-color: var(--o-tc); color: var(--o-tc-ink); }
-:is(#propen, #metaopen) .olist .oa1 { background-color: var(--oa-1); color: var(--oa-ink-1); }
-:is(#propen, #metaopen) .olist .oa2 { background-color: var(--oa-2); color: var(--oa-ink-2); }
-:is(#propen, #metaopen) .olist .oa3 { background-color: var(--oa-3); color: var(--oa-ink-3); }
-:is(#propen, #metaopen) .obig { font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; padding: 10px 30px;
+:is(#propen, #metaopen, #tip) .olist .ou-upgrade::before { content: ""; position: absolute; inset: -1px -3px; }
+:is(#propen, #metaopen, #tip) .olist .otc { background-color: var(--o-tc); color: var(--o-tc-ink); }
+:is(#propen, #metaopen, #tip) .olist .oa1 { background-color: var(--oa-1); color: var(--oa-ink-1); }
+:is(#propen, #metaopen, #tip) .olist .oa2 { background-color: var(--oa-2); color: var(--oa-ink-2); }
+:is(#propen, #metaopen, #tip) .olist .oa3 { background-color: var(--oa-3); color: var(--oa-ink-3); }
+:is(#propen, #metaopen, #tip) .obig { font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; padding: 10px 30px;
   border: 0; border-radius: 9px; background: var(--chip-on); color: var(--on-chip); box-shadow: var(--shadow); }
-:is(#propen, #metaopen) .obig:hover { filter: brightness(1.12); }
+:is(#propen, #metaopen, #tip) .obig:hover { filter: brightness(1.12); }
 
 .calblock + .calblock { margin-top: 18px; }
 .calhead { font-weight: 700; font-size: 13px; margin: 0 0 2px; }
@@ -979,8 +984,9 @@ svg.bdragging { user-select: none; }
       replays are read. The builds are grouped as above, and each says how often it won. That is the
       plain record, not adjusted for ratings. On 1v1 a second panel shows the enemies' builds, each
       from the enemy's side: how often it was played, and how often it won.</p>
-      <p>Point at a build's Town Centre bar to see the main ways it is played. Each way is a group of
-      games alike by the same measures, with its share of the games. The one drawn is marked.</p>
+      <p>Point at a build's Town Centre bar to see the main ways it is played, each drawn the same
+      way as the bar. Each way is a group of games alike by the same measures, with its share of the
+      games. The one drawn in the row is marked.</p>
 
       <h2>Sides</h2>
       <p>A side's number on a map is the average of its best three players. The page tries every
@@ -4806,6 +4812,7 @@ const META = { on: false, loop: null, err: null, until: 0, pause: 0, rows: [], m
 const metaPool = () => DATA.players.filter(p => !isStale(p) && inList(p) && HAS(p) && !PROV(p))
   .sort((a, b) => LV(b) - LV(a)).slice(0, META_POOL);
 const redraw = S => S === META ? drawMeta() : drawOpenings();
+TIPFN.ways = el => ((el.dataset.ways[0] === "m" ? META : OPEN).ways?.get(el.dataset.ways.slice(1)) || (() => ""))();
 // the loops redraw the tab at most this often: a redraw is every build of up to a thousand games
 const META_DRAW_EVERY = 1200;
 let META_DRAW = 0;
@@ -5043,12 +5050,14 @@ async function openOne(g, S = OPEN) {
 }
 function drawOpenings(rows = OPEN.rows) {
   OPEN.rows = rows;
+  OPEN.ways = new Map();
   const box = $("#propen");
   if (!rows.length) { box.innerHTML = ""; return; }
   drawPanels(box, rows, `Openings: ${rows.map(r => r.p.name).join(", ")}`, [panelOpenings]);
 }
 function drawMeta() {
   if (VIEW !== "openings") return;
+  META.ways = new Map();
   META.rows = metaPool().map(p => ({ p, tone: "--accent" }));
   const shell = r => panelShell(r.title, r.ctl, r.body != null ? r.body : `<svg class="prof" viewBox="0 ${r.crop || 0} ${PW} ${
     r.h - (r.crop || 0)}" role="img" aria-label="Openings">${r.svg}</svg>`);
@@ -5462,19 +5471,19 @@ function panelOpenings(rows, y, S = OPEN, enemies = false) {
     return `<span class="ounits" style="height:${blocks.length || marks.length ? OPEN_LANE : 0}px">${
       blocks.map(block).join("")}${marks.map(mark).join("")}</span>`;
   };
-  // a way of playing in a few words: each age's click and the villagers by then, and the army it made most of
-  const wayOf = o => {
-    const a = o.ages || {}, made = spawnsOf(o), army = new Map();
-    const ups = OPEN_UPS.filter(([age]) => a[age] && a[age][0] <= OPEN_HORIZON).map(([age]) =>
-      `${age[0].toUpperCase()}${age.slice(1)} ${clockOf(a[age][0])} with ${made.filter(t => t <= a[age][0]).length + (o.start || 3)}`);
-    (o.units || []).filter(u => u[3] === "army").forEach(([, word, n]) => army.set(word, (army.get(word) || 0) + n));
-    const [word, n] = [...army].sort((p, q) => q[1] - p[1])[0] || [];
-    return [...ups, ...(word ? [`${n} ${word}`] : [])].join(" · ");
+  /* The hover of a bar with more than one way draws each way's game as the bar itself is drawn, with
+     its share (Daniel, 2026-11-06: "in the tooltip it needs to be as the graphs, not words"). It is
+     made when pointed at (`TIPFN.ways`), from what the draw left in `S.ways`, so a list of a thousand
+     games carries no copy of its bars. */
+  const waysTip = (ways, named, lead = "") => {
+    if (ways.length < 2) return tipAttr(lead);
+    const id = String(S.ways.size);
+    S.ways.set(id, () => `<div class="olist oways">${lead ? `<div>${lead}</div>` : ""}<div class="k">Played ${ways.length} ways</div>${
+      ways.map(w => `<div class="oway"><div><b>${Math.round(100 * w.share)}%</b>${named ? ` ${esc(w.e.o.name || "Unnamed")}` : ""}${
+        w.drawn ? ` <span class="k">· drawn</span>` : ""}</div>${tcBar(w.e.o)}</div>`).join("")}</div>`);
+    return ` data-tipfn="ways" data-ways="${S.meta ? "m" : "o"}${id}"`;
   };
-  const waysTip = (ways, named) => ways.length < 2 ? "" : `Played ${ways.length} ways:<br>` + ways.map(w =>
-    `<b>${Math.round(100 * w.share)}%</b>${named ? ` ${esc(w.e.o.name || "Unnamed")}` : ""} · ${esc(wayOf(w.e.o))}${
-      w.drawn ? ` <span class="k">(drawn)</span>` : ""}`).join("<br>");
-  const tcBar = (o, tip = "") => `<span class="orows"><span class="obar otime"${tipAttr(tip)}>${timeBar(o)}</span>${unitsRow(o)}</span>`;
+  const tcBar = (o, attr = "") => `<span class="orows"><span class="obar otime"${attr}>${timeBar(o)}</span>${unitsRow(o)}</span>`;
   /* Which civilisations a build was played with (Daniel, 2026-11-06: "civilisations distribution for
      that build (how much is the build played with specific civilisation)"): a part a civ, commonest
      first, as wide as its share and told by its emblem, not a colour - there are 50 of them. A civ
@@ -5679,8 +5688,7 @@ function panelOpenings(rows, y, S = OPEN, enemies = false) {
       if (!es.length) return "";
       const builds = byBuild(es, nameOf), most = builds[0][1].length, sim = similar(es), top = sim.pick;
       return group(i, groupName(i, `${Math.round(100 * es.length / own(xs[0]).length)}% · ${esc(nameOf(top))}`),
-          recordBar(es, es.length) + tcBar(top.o, [`${esc(nameOf(top))}, the commonest`, waysTip(sim.ways, true)]
-            .filter(Boolean).join("<br>")) + civBar(es))
+          recordBar(es, es.length) + tcBar(top.o, waysTip(sim.ways, true, `${esc(nameOf(top))}, the commonest`)) + civBar(es))
         + builds.map(([b, bs]) => {
           const { pick, ways } = similar(bs);
           return folded(i, b, open => line("obh", `${esc(b)}<span class="mk">${bs.length}</span>`,
@@ -5714,7 +5722,7 @@ function panelOpenings(rows, y, S = OPEN, enemies = false) {
       const picksOf = list => list.map(sd => sd.es.length ? similar(sd.es).pick : null);
       const tops = picksOf(sides);
       return group(i, groupName(i, tops.map(top => top ? esc(nameOf(top)) : "–").join(" / ")), shares(sides, groups)
-          + tops.map((top, k) => top ? tcBar(top.o, `${esc(sides[k].x.p.name)}: ${esc(nameOf(top))}, the commonest`)
+          + tops.map((top, k) => top ? tcBar(top.o, tipAttr(`${esc(sides[k].x.p.name)}: ${esc(nameOf(top))}, the commonest`))
             : "<span></span>").join(""))
         + builds.map(([b, bs]) => {
           const picks = picksOf(bs);
