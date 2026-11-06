@@ -924,17 +924,18 @@ svg.bdragging { user-select: none; }
       The two lists at the top keep only the games played as one civilisation, or on one map or type
       of map. Games that match are read first.
       The middle column is the main Town Centre's work in one real game. It is not an average of
-      many games. It is the game closest to the usual on everything at once. Each thing is compared
+      many games. It is the game most of the others are like. Each thing is compared
       on its own: the villagers and time at each age-up, the time going up, when Loom was done, and
-      how long the Town Centre stood idle in each age.
+      how long the Town Centre stood idle in each age, and its build's name. Games a little different
+      still count as alike.
       Villagers trained back to back are one block, 25 seconds each, ending when the last came out. A gap is
       time the Town Centre made nothing. A gap shorter than one villager is drawn as none, since the
       replay cannot place time that short. Each block of villagers shows how many it holds. The first
       in Dark Age includes the starting ones. After Castle Age is shown only for fast imperial builds.
       The age-ups are blocks from when the research started. Techs
       like Loom are blocks of their own, placed when they were done. Anything past 25 minutes is not
-      shown. Click a group to see its builds, and a build to see its games, the one in its bar first
-      and shaded. Each shows who
+      shown. A group's own row shows its commonest game and names its build. Click a group
+      to see its builds, and a build to see its games, the one in its bar first and shaded. Each shows who
       played which civilisation against whom. Each opens as a build card in the Builds tab, or as the
       match on AoE2 Insights.</p>
       <p>Each replay is a download of a few MB. Microsoft seems to keep only a player's last 200
@@ -5095,19 +5096,27 @@ function panelOpenings(rows, y) {
     techs.forEach(([name, t, len]) => { m[name] = Math.min(OPEN_HORIZON, t + len); });
     return m;
   };
-  /* The game nearest every measure's own median at once, each measure in its own spread over the
-     games (the median distance from its median, never under a villager's 25 seconds), so the one
-     that varies most does not decide alone. The median and not the mean: a Castle Age never clicked
-     sits at 25 minutes and would drag a mean. The latest game wins a tie, which settles every build
-     of two games. */
+  /* The game most of the others are like - the commonest by similarity, so games a little apart
+     still count for each other (Daniel, 2026-11-06: "even when not identical they should be
+     considered as more common if two builds are slightly different"). Two games are alike on a
+     measure by e^-(their difference / its spread), the spread the median distance from its median
+     over the games, never under a villager's 25 seconds, so a measure that varies a lot does not
+     decide alone; and alike by the mean over the measures and their build's name, which counts as
+     one measure more. Each game scores how alike every other game is to it, and the highest wins,
+     the latest on a tie, which settles every build of two games. It was the game nearest every
+     measure's median until then: the two agree in 16 of 21 builds of three games or more over four
+     players' local replays, and a group's game is of its commonest-named build in 18 of 18 with
+     the name in, 14 without (DanielCZ's fast castles drew an FC UU game against 13 FC Boom). */
   const ordinary = es => {
-    const ms = es.map(e => measures(e.o)), off = es.map(() => 0);
-    new Set(ms.flatMap(m => Object.keys(m))).forEach(key => {
+    const ms = es.map(e => measures(e.o)), keys = [...new Set(ms.flatMap(m => Object.keys(m)))];
+    const spread = Object.fromEntries(keys.map(key => {
       const xs = ms.map(m => m[key] ?? OPEN_HORIZON), mid = medianOf(xs);
-      const spread = Math.max(OPEN_VILLAGER, medianOf(xs.map(x => Math.abs(x - mid))));
-      xs.forEach((x, i) => { off[i] += Math.abs(x - mid) / spread; });
-    });
-    return es[off.indexOf(Math.min(...off))];
+      return [key, Math.max(OPEN_VILLAGER, medianOf(xs.map(x => Math.abs(x - mid))))];
+    }));
+    const alike = (i, j) => (keys.reduce((t, key) => t + Math.exp(-Math.abs((ms[i][key] ?? OPEN_HORIZON)
+      - (ms[j][key] ?? OPEN_HORIZON)) / spread[key]), 0) + (es[i].o.name === es[j].o.name)) / (keys.length + 1);
+    const score = es.map((_, i) => es.reduce((t, __, j) => i === j ? t : t + alike(i, j), 0));
+    return es[score.indexOf(Math.max(...score))];
   };
   /* The main Town Centre's work an age at a time, everything at its own time, so a row's ages line
      up with every other row's: [{k, from, up, landing, runs}], `up` the age-up's research start,
@@ -5208,7 +5217,7 @@ function panelOpenings(rows, y) {
       .map(([k, s]) => `<i style="width:${px(k).toFixed(1)}px;background:var(${s ? `--o-${s}` : "--grid"})${
         s ? `;color:var(--o-${s}-ink)` : ""}">${s && fits(px(k), k) ? k : ""}</i>`).join("")}</span>`;
   };
-  const tcBar = o => `<span class="obar otime">${timeBar(o)}</span>`;
+  const tcBar = (o, tip = "") => `<span class="obar otime"${tipAttr(tip)}>${timeBar(o)}</span>`;
   /* Which civilisations a build was played with (Daniel, 2026-11-06: "civilisations distribution for
      that build (how much is the build played with specific civilisation)"): a part a civ, commonest
      first, as wide as its share and told by its emblem, not a colour - there are 50 of them. A civ
@@ -5373,12 +5382,14 @@ function panelOpenings(rows, y) {
         + `</tbody>`;
     };
     const groupName = (i, mark) => `${swatch(`var(--og-${i + 1})`)}${esc(OPEN_SHOWN[i][1])}${mark ? `<span class="mk">${mark}</span>` : ""}`;
+    /* A group's own row shows its commonest game and names that game's build (Daniel, 2026-11-06:
+       "instead of the median write the most common build"). */
     const section = i => {
       const es = own(xs[0]).filter(e => openShown(e.o.group) === i);
       if (!es.length) return "";
-      const builds = byBuild(es, nameOf), most = builds[0][1].length;
-      return group(i, groupName(i, `${Math.round(100 * es.length / own(xs[0]).length)}%`),
-          recordBar(es, es.length) + tcBar(ordinary(es).o) + civBar(es))
+      const builds = byBuild(es, nameOf), most = builds[0][1].length, top = ordinary(es);
+      return group(i, groupName(i, `${Math.round(100 * es.length / own(xs[0]).length)}% · ${esc(nameOf(top))}`),
+          recordBar(es, es.length) + tcBar(top.o, `${esc(nameOf(top))}, the commonest`) + civBar(es))
         + builds.map(([b, bs]) => {
           const pick = ordinary(bs);
           return folded(i, b, open => line("obh", `${esc(b)}<span class="mk">${bs.length}</span>`,
@@ -5410,7 +5421,10 @@ function panelOpenings(rows, y) {
         .sort((p, q) => both(q[1]) - both(p[1]));
       const most = both(builds[0][1]);
       const picksOf = list => list.map(sd => sd.es.length ? ordinary(sd.es) : null);
-      return group(i, groupName(i), shares(sides, groups) + openings(picksOf(sides)))
+      const tops = picksOf(sides);
+      return group(i, groupName(i, tops.map(top => top ? esc(nameOf(top)) : "–").join(" / ")), shares(sides, groups)
+          + tops.map((top, k) => top ? tcBar(top.o, `${esc(sides[k].x.p.name)}: ${esc(nameOf(top))}, the commonest`)
+            : "<span></span>").join(""))
         + builds.map(([b, bs]) => {
           const picks = picksOf(bs);
           return folded(i, b, open => line("obh", esc(b), shares(bs, most) + openings(picks), open),
