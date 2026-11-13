@@ -145,7 +145,7 @@ header {
   --ink: #f4e6c2; --ink-2: #d8c59a; --muted: #a8926a; --surface: #3a2b1c;
   --page: rgba(244,230,194,.08); --stripe: rgba(244,230,194,.1); --grid: rgba(214,178,98,.2);
   --rule: rgba(214,178,98,.45); --border: rgba(214,178,98,.3);
-  --chip-on: #c9a24a; --on-chip: #21180e; --accent: var(--gold);
+  --chip-on: #c9a24a; --on-chip: #21180e; --accent: var(--gold); --neg-rgb: 230 103 103;
   color-scheme: dark; color: var(--ink);
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
@@ -167,6 +167,12 @@ nav button[aria-selected="true"] {
   background: var(--chip-on); color: var(--on-chip); border-color: transparent; font-weight: 700;
 }
 .ghost { border-color: var(--border); }
+#files { display: flex; gap: 4px; }
+#files button { display: inline-flex; padding: 5px 8px; }
+#files svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+#files button[data-state="busy"] { cursor: progress; opacity: .6; }
+#files button[data-state="error"] { color: rgb(var(--neg-rgb)); border-color: currentColor; }
 
 /* bordered and apart from the tabs: it changes what every number means, it is not navigation */
 #scaleswitch, .seg {
@@ -805,6 +811,13 @@ svg.bdragging { user-select: none; }
     <button data-board="team" aria-selected="false">Team</button>
     <button data-board="ew" aria-selected="false" hidden>EW</button>
   </div>
+  <div id="files" role="group" aria-label="Analysis">
+    <button type="button" class="ghost" id="export" data-tip="Export analysis" aria-label="Export analysis"><svg viewBox="0 0 24 24"
+      aria-hidden="true"><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/><path d="M12 14V3"/><path d="m8 7 4-4 4 4"/></svg></button>
+    <button type="button" class="ghost" id="import" data-tip="Import analysis" aria-label="Import analysis"><svg viewBox="0 0 24 24"
+      aria-hidden="true"><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/></svg></button>
+    <input type="file" id="importfile" accept=".gz,.json" hidden>
+  </div>
   <button class="ghost" id="theme" title="Theme" aria-label="Theme">◐</button>
 </header>
 
@@ -1015,19 +1028,21 @@ svg.bdragging { user-select: none; }
       Zero is their usual level. A strength has three parts. The first is how good the civ is for
       everybody. The second is how the player does with it, pulled toward the first unless they
       have many games on it. The third is habit: a civ they pick a lot is worth a little more to
-      them. Civ effects are small, rarely over 50 Elo. A large, solid civ is one they play a lot.
-      A small, faint one they rarely or never play.</p>
+      them. Civ effects are small, rarely over 50 Elo.</p>
+      <p>On the Maps, Civilizations and Openings charts, an icon is solid once it has ten games behind it.
+      With fewer it is fainter. Its size is how much they play it, against what they play most. So a
+      large icon is one they play a lot.</p>
       <p>For a team on one card, each civ sits at its best player: the one strongest on it. Its size
       is their games on it.</p>
       <p>A ring around a civ is the colours of the players who can play it: five games or more on it, and
       at least their usual level there. Two sides get one chart. Across is how much more one side gains
       from a civ than the other. Up is how likely the side it favours is to pick it. Top left is a civ to
-      ban, top right one to pick, and low down one nobody is likely to bring. <b>Pick</b> lists the three civs you are
-      furthest ahead on. <b>Ban</b> lists the
-      three civs whose ban takes the most from them: how often they pick it, times how much better
-      they are on it than on what they would pick instead.</p>
+      ban, top right one to pick, and low down one nobody is likely to bring. A civ's hover says what a ban
+      takes from them: how often they pick it, times how much better they are on it than on what they
+      would pick instead.</p>
       <p>On <b>1v1</b>, three or four players get it too. The first player added is one side.
-      The others are the second side.</p>
+      The others are the second side, but only one of them is met. Each is as likely. So a civ is
+      worth to them the average of their figures, not the best one.</p>
       <p><b>Openings</b> reads the replays of their games. A set of rules names what each game
       opened with and puts it in a group. Dark Age is a militia rush, or villagers sent to fight
       or to steal the enemy's boar and deer. Feudal is an attack in Feudal Age. Forward is a tower,
@@ -1038,8 +1053,13 @@ svg.bdragging { user-select: none; }
       says how much that is. A few games are mostly luck here too.</p>
       <p>Each icon is one build, drawn from its name. Its frame is the build's group. It sits at
       their strength with the build, in Elo against their usual over every build, the dashed line. The
-      rating gap of each game is taken out. A build with few games is pulled toward their usual. A larger, bolder icon is a
+      rating gap of each game is taken out. A build with few games is pulled toward their usual. A larger icon is a
       build they open with more often. Click an icon to show that build under the chart.</p>
+      <p>The detail buttons, 1 to 5, fold similar builds into one icon. Builds are similar when their names
+      share parts: M@A + Archers is close to Archers and to M@A. A build with few games folds first. 1 is one
+      icon a group, 5 every build. The middle one is picked at first: the most detail where each icon has three
+      games or more, and at most twelve icons. With few builds there are fewer buttons. A folded icon has a second
+      tile behind it, and its hover lists the builds in it.</p>
       <p>A team gets one line. Each build is drawn once, at the strength of the player who plays it best,
       of those who opened with it at least three times. Its frame has the colours of all of them. Point at
       a name above the chart, or pin it, to see only that player's builds. Two sides get one chart: across, how often your side opens with a build, up, how often theirs
@@ -1108,7 +1128,9 @@ svg.bdragging { user-select: none; }
       hover shows each player. With two sides, Units is one chart like Openings', and Timing one line of who
       reaches each thing sooner.
       <b>Timing</b> shows when they click Feudal and Castle Age, make their first soldier and finish
-      each main upgrade. An icon sits at how much sooner or later than the <span class="m-topn">top 100</span> that is. A larger,
+      each main upgrade. An icon sits at how much sooner or later than the <span class="m-topn">top 100</span> that is.
+      Each build is timed on its own first. Then the builds are averaged, by how often they are played.
+      Otherwise the most played build would decide alone. A larger,
       bolder icon is one they reach by 25 minutes more often. A game that ended sooner counts only for
       the minutes it lasted. A unit counts when it is queued, paid for or not, so the army can read
       high.</p>
@@ -3047,24 +3069,25 @@ function bandBar(node, opts = {}) {
    it of whoever on the card is strongest on it, the match-up's own reading (`civDraft`,
    `civChart`). It was two, how they do on it and against it, each off their own results barely
    shrunk - mostly noise across, and nothing measurable up. Two cards are a match-up and get Pick
-   and Ban (`civMatch`), and so does the 1v1 card with three or four, the first against the rest
-   (`drawOne`).
-
-   **Opacity is how much the player plays the civ** (Daniel, 2026-11-06: "based on how much you
-   play it, and not based on how much you play against it"): their effective games with it over
-   those with the civ they play most, so their main is solid; for several, the most any of them
-   plays it. It was how sure the reading is from 2026-11-04, and a match-up still is.
+   and Ban (`civMatch`), and so does the 1v1 card with three or four: the first against whichever of
+   the rest they meet (`drawOne`, `draftOneOf`).
 
    **Every figure is relative** - the player's own less their overall - because players are
    read against each other here, and an absolute axis spends its length on how far apart
    they are rated. */
 const CIV_FAINT = 0.2;
+/* **Opacity is evidence, size is games** (Daniel, 2026-11-13: "if you have enough evidence it's opaque and if
+   you have enough evidence and a lot of games it would make the icon even larger"), on the Maps,
+   Civilizations and Openings charts: an icon is solid from `EVIDENT` games of its own, whatever else is on
+   the chart, and fainter below; its size still grows with its games against the most of whoever plays it.
+   Measured against the busiest icon, as it was, a main civ or Arabia left nearly everything faint: Hera
+   against TheViper drew the median civ at the floor. Judgement: the civs' games are effective games. */
+const EVIDENT = 10;
+const evident = n => CIV_FAINT + (1 - CIV_FAINT) * Math.min(1, Math.max(0, n || 0) / EVIDENT);
 /* a cell is [games, effective games, win %, performance, its se] - `bands.civ_rows` */
-const civSureZ = z => CIV_FAINT + (1 - CIV_FAINT) * Math.min(1, Math.max(0, z - 1));
-function civPlays(s, civ) {
-  const c = s.data.played[civ], most = Math.max(0, ...Object.values(s.data.played).map(p => p[1]));
-  return CIV_FAINT + (1 - CIV_FAINT) * (c && most ? c[1] / most : 0);
-}
+const civGames = (s, civ) => (s.data.played[civ] || [0, 0])[1];
+const civShare = (s, civ) => { const most = Math.max(0, ...Object.values(s.data.played).map(p => p[1]));
+  return most ? civGames(s, civ) / most : 0; };
 const civRel = v => Math.round(v) === 0 ? "0" : sg(v);
 // emblem file stems where the match data's name is not simply the lower-cased file name
 const CIV_FILE = { Inca: "incas", Maya: "mayans", Indians: "hindustanis" };
@@ -3189,11 +3212,11 @@ function civEmblem(m, G) {
     <circle class="civback" cx="${m.cx.toFixed(1)}" cy="${m.cy.toFixed(1)}" r="${r}"/>${halves}${face}</g>`;
 }
 
-// one side of a match-up: those on it with a reading, and its name and colour
-function civSide(name, tone, members) {
+// one side of a match-up: those on it with a reading, and its name and colour; `oneOf` when only one of them is met
+function civSide(name, tone, members, oneOf = false) {
   const live = members.filter(s => !s.off && s.data && s.data.all);
   // a roster stays a roster however many are off, or its rings would vanish with them
-  return { name, tone, live, one: members.length === 1 };
+  return { name, tone, live, one: members.length === 1, oneOf };
 }
 
 // `link` only where the name is a label: in a hover it could not be clicked
@@ -3263,8 +3286,8 @@ function civLines(node, sides, head = "") {
       const can = sd.per.filter(r => civCan(r.d[civ])), reach = Math.max(30, ...sd.per.map(r => Math.abs(r.d[civ].v)));
       const order = sd.per.slice().sort((p, q) => civCan(q.d[civ]) - civCan(p.d[civ]) || q.d[civ].v - p.d[civ].v);
       const ban = sd.ban ? sd.ban(civ) : null;
-      return { civ, by: best.s, cx: X(val(best, civ)), dy: 0, a: Math.max(...sd.per.map(r => civPlays(r.s, civ))),
-        size: G.least + (1 - G.least) * Math.sqrt(x.cell && best.most ? x.cell[1] / best.most : 0),
+      return { civ, by: best.s, cx: X(val(best, civ)), dy: 0, a: evident(civGames(best.s, civ)),
+        size: G.least + (1 - G.least) * Math.sqrt(civShare(best.s, civ)),
         tones: several ? can.map(r => r.s.tone) : [], carry: `|${can.map(r => r.s.name).join("|")}|`,
         tipText: tipHead(esc(civ), tipImg(civIcon(civ)), named ? esc(sd.name) : "") + tipRows([
           ...order.map(r => { const e = r.d[civ], n = e.cell ? e.cell[1] : 0;
@@ -3338,23 +3361,38 @@ function civDraft(s) {
    each player's chance of picking it times how far it is above what they would pick instead,
    summed. "Instead" leaves the banned civ out: a one-civ player's pick-weighted usual is that civ,
    and measured against it the ban that matters most to them read as worth nothing. */
-function draftSide(side) {
-  const per = side.live.map(s => ({ s, d: civDraft(s) })).filter(r => r.d);
-  per.forEach(r => {
-    const xs = Object.values(r.d);
-    r.w = xs.reduce((t, x) => t + x.p, 0);
-    r.sum = xs.reduce((t, x) => t + x.p * x.v, 0);
+function civBans(side) {
+  return side.live.map(s => ({ s, d: civDraft(s) })).filter(r => r.d).map(r => {
+    const xs = Object.values(r.d), w = xs.reduce((t, x) => t + x.p, 0), sum = xs.reduce((t, x) => t + x.p * x.v, 0);
+    return { ...r, ban: civ => { const x = r.d[civ], rest = w - x.p;
+      return x.p * Math.max(0, x.v - (rest > 0 ? (sum - x.p * x.v) / rest : 0)); } };
   });
+}
+function draftSide(side) {
+  const per = civBans(side);
   return civ => {
     let best = null, ban = 0;
     for (const r of per) {
       const x = r.d[civ];
       if (!x) continue;
       if (!best || x.v > best.x.v) best = { s: r.s, x };
-      const rest = r.w - x.p;
-      ban += x.p * Math.max(0, x.v - (rest > 0 ? (r.sum - x.p * x.v) / rest : 0));
+      ban += r.ban(civ);
     }
-    return best && { v: best.x.v, by: best.s, x: best.x, ban };
+    return best && { v: best.x.v, abs: best.s.data.all[3] + best.x.v, by: best.s, x: best.x, ban };
+  };
+}
+/* The rest of a 1v1 card of three or four, of whom the first meets one (Daniel, 2026-11-13: "consider it as
+   1v1v1 scenario in which you consider the first player as main player vs the others"): each as likely, so a
+   civ is worth to them the mean of their readings and a ban takes the mean off. Read as a team, the best of
+   them on each civ, two or three players' maxima stood against one player's figure and put most civs in Ban. */
+function draftOneOf(side) {
+  const per = civBans(side);
+  return civ => {
+    const xs = per.filter(r => r.d[civ]).map(r => ({ s: r.s, x: r.d[civ], ban: r.ban(civ) }));
+    if (!xs.length) return null;
+    const mean = f => xs.reduce((t, q) => t + f(q), 0) / xs.length;
+    return { v: mean(q => q.x.v), abs: mean(q => q.s.data.all[3] + q.x.v), by: null, ban: mean(q => q.ban),
+             x: { post: Math.sqrt(xs.reduce((t, q) => t + q.x.post ** 2, 0)) / xs.length } };
   };
 }
 
@@ -3365,18 +3403,21 @@ function draftSide(side) {
    players (`civDraft`'s `p`), on a log scale. Top left is a Ban, top right a Pick, the bottom civs nobody
    is likely to bring. Ringed in the colours of everyone on either side who can play it (`civCan`). The plane
    before had a side's strength on each axis, and a civ's worth to everybody is in both, so four civs in five
-   sat on its diagonal; two rows a side came between. Over it the three civs the first side is furthest
-   ahead on and the three bans that take the most off the other. */
-const CIVPLANE = { w: 900, h: 600, l: 70, r: 20, t: 30, b: 62, icon: 30 };
+   sat on its diagonal; two rows a side came between. The Pick and Ban lists over it went on 2026-11-13
+   (Daniel: "remove the text for pick/ban"). As large as the larger share any player on it gives the civ of
+   their games, so a player with fewer games has mains as large as the other's (`EVIDENT`). */
+const CIVPLANE = { w: 900, h: 600, l: 70, r: 20, t: 30, b: 62, icon: 34, least: 0.5 };
 function civMatch(node, you, him) {
-  const sides = [you, him].map(w => ({ w, per: civRead(w.live), draft: draftSide(w) }));
+  const sides = [you, him].map(w => ({ w, per: civRead(w.live), draft: w.oneOf ? draftOneOf(w) : draftSide(w) }));
   if (sides.some(x => !x.per.length)) { civChart(node, sides.flatMap(x => x.per.length ? x.w.live : [])); return; }
   civSwitch(node);
   const abs = PCSCALE === "abs", G = CIVPLANE;
   const [A, B] = sides.map(x => x.draft), civs = Object.keys(sides[0].per[0].d);
-  const picked = per => civ => 1 - per.map(r => r.d[civ]).filter(Boolean).reduce((t, x) => t * (1 - x.p), 1);
-  const [pA, pB] = sides.map(x => picked(x.per));
-  const at = e => (abs ? e.by.data.all[3] : 0) + e.v;
+  // a side picks a civ when any of them does; of whom only one is met, when that one does
+  const picked = (per, oneOf) => civ => { const ps = per.map(r => r.d[civ]).filter(Boolean).map(x => x.p);
+    return oneOf ? ps.reduce((t, p) => t + p, 0) / ps.length : 1 - ps.reduce((t, p) => t * (1 - p), 1); };
+  const [pA, pB] = sides.map(x => picked(x.per, x.w.oneOf));
+  const at = e => abs ? e.abs : e.v;
   const rows = civs.map(civ => ({ civ, x: A(civ), y: B(civ) })).filter(r => r.x && r.y).map(r => {
     const adv = at(r.x) - at(r.y);
     return { ...r, adv, pa: pA(r.civ), pb: pB(r.civ), pri: adv >= 0 ? pA(r.civ) : pB(r.civ) };
@@ -3390,8 +3431,10 @@ function civMatch(node, you, him) {
   const marks = rows.map(r => {
     const each = sides.flatMap(({ w, per }, i) => per.map(p => ({ w, i, p, e: p.d[r.civ] }))).filter(q => q.e);
     const can = each.filter(q => civCan(q.e)), reach = Math.max(30, ...each.map(q => Math.abs(q.e.v)));
-    return { civ: r.civ, by: null, cx: X(r.adv), cy: Y(r.pri), size: 1,
-      a: Math.max(civSureZ(Math.abs(r.x.v) / r.x.x.post), civSureZ(Math.abs(r.y.v) / r.y.x.post)),
+    const players = sides.flatMap(x => x.per.map(p => p.s));
+    return { civ: r.civ, by: null, cx: X(r.adv), cy: Y(r.pri),
+      size: G.least + (1 - G.least) * Math.sqrt(Math.max(...players.map(s => civShare(s, r.civ)))),
+      a: evident(Math.max(...players.map(s => civGames(s, r.civ)))),
       tones: can.map(q => q.p.s.tone), carry: `|${can.map(q => q.p.s.name).join("|")}|`,
       tipText: tipHead(esc(r.civ), tipImg(civIcon(r.civ)), r.adv >= 0 ? `Pick for ${esc(you.name)}` : `Ban for ${esc(you.name)}`) + tipRows([
         ...each.sort((m, n) => m.i - n.i || civCan(n.e) - civCan(m.e) || n.e.v - m.e.v).map(q => { const n = q.e.cell ? q.e.cell[1] : 0;
@@ -3414,16 +3457,11 @@ function civMatch(node, you, him) {
     + `<text class="civaxis" x="${x0}" y="${G.h - 12}">← ${esc(him.name)} ${gain}</text>`
     + `<text class="civaxis" x="${x1}" y="${G.h - 12}" text-anchor="end">${esc(you.name)} ${gain} →</text>`
     + `<text class="civaxis" transform="translate(16 ${((y0 + y1) / 2).toFixed(1)}) rotate(-90)" text-anchor="middle">picked by the side it favours →</text>`;
-  const list = (rs, val, fmt) => rs.slice().sort((m, n) => val(n) - val(m)).slice(0, 3)
-    .map(r => `<span class="civtop">${civIcon(r.civ) ? `<img src="${civIcon(r.civ)}" alt="">` : ""}${
-      esc(r.civ)} <b>${fmt(r)}</b></span>`).join("");
-  const draft = `<div class="civkey civdraft"><b>Pick</b>${list(rows, r => r.adv, r => sg(r.adv))}
-    <b>Ban</b>${list(rows, r => r.y.ban, r => `+${r.y.ban.toFixed(1)}`)}</div>`;
   const named = s => s.live.map(civKey).join("");
   const key = `<div class="civkey"><span class="side" data-side="a">A</span>${named(you)}<span class="side" data-side="b">B</span>${named(him)}</div>`;
-  node.innerHTML = key + draft + `<svg class="civsvg" viewBox="0 0 ${G.w} ${G.h}" role="img"
+  node.innerHTML = key + `<svg class="civsvg" viewBox="0 0 ${G.w} ${G.h}" role="img"
       aria-label="${esc(you.name)} against ${esc(him.name)}: who gains from each civilization, and how likely it is picked">
-    ${svg}${marks.sort((m, n) => m.a - n.a).map(m => civEmblem(m, G)).join("")}</svg>`;
+    ${svg}${marks.sort((m, n) => m.size - n.size || m.a - n.a).map(m => civEmblem(m, G)).join("")}</svg>`;
   civRepin(node);
 }
 
@@ -3648,7 +3686,8 @@ document.addEventListener("click", e => {
 });
 const updText = u => (u.whole ? `read off ${u.games} games of the last three months`
   : u.games ? `${u.games} game${u.games > 1 ? "s" : ""} since ${SINCE} read in` : `no game since ${SINCE}`)
-  + (u.panels ? `; the other panels failed: ${u.panels}` : "");
+  + (u.panels ? `; the other panels failed: ${u.panels}` : "")
+  + (u.file ? ` · imported, read ${dayName(u.file) || "elsewhere"}` : "");
 const updSay = p => {
   const u = UPD.get(p.pid);
   return u && u.state === "done" ? `<br><span class="mk">⟳ ${updText(u)}</span>` : "";
@@ -3746,9 +3785,7 @@ function newcomer(q, res, d) {
   const cells = () => Object.fromEntries(Object.keys(DATA.mapCat).map(m => [m, cell()]));
   const rating = id => ((d.leaderboards || []).find(l => l.leaderboardId === id) || {}).rating ?? null;
   const last = (d.leaderboards || []).map(l => l.lastMatchTime || "").sort().pop() || "";
-  const taken = new Set(ALL.map(x => x.p.name));
-  const name = taken.has(d.name) ? `${d.name} (${q})` : d.name;
-  const url = `https://www.aoe2insights.com/user/relic/${q}/`;
+  const name = freeName(d.name, q), url = ladderUrl(q);
   const p = { name, pid: q, url, country: d.country || null, home: false, top: false, accounts: 1,
     alts: [[d.name, last.slice(0, 10) || null, rating("rm_1v1"), rating("rm_team"), false, url, q]],
     team: LADDER.title, teamKey: LADDER.key, screen: false, unsigned: true, lastPlayed: last.slice(0, 10) || null,
@@ -3757,11 +3794,16 @@ function newcomer(q, res, d) {
     playedSolo: over.played[1], seat: null, win: {}, trend: { team: null, solo: null }, mws: {},
     evc: DATA.event.map(() => [0, se, 0, "est"]), evg: DATA.groupOrder.map(() => [0, se, 0, "est"]),
     cells: cells(), cellsFlank: cells(), cellsPocket: cells(), mapWin: {}, ...over };
-  LADDER.players.push(p);
-  FLAT.set(q, p);
-  ALL.push({ p, t: LADDER, key: LADDER.key + "·" + name });
   UPD.set(q, { state: "done", over, games: res.games, whole: true });
-  return LADDER.key + "·" + name;
+  return enlist(p);
+}
+const ladderUrl = q => `https://www.aoe2insights.com/user/relic/${q}/`;
+const freeName = (name, q) => ALL.some(x => x.p.name === name) ? `${name} (${q})` : name;
+function enlist(p) {
+  LADDER.players.push(p);
+  FLAT.set(p.pid, p);
+  ALL.push({ p, t: LADDER, key: LADDER.key + "·" + p.name });
+  return LADDER.key + "·" + p.name;
 }
 /* A ladder pick: a player of the page's is theirs, read up to today; anybody else is measured. */
 async function meet(q, name, c) {
@@ -4100,7 +4142,8 @@ const lineupWorth = (r, overall) => lineupGain(r.play.length) * (r.best3 - overa
    visible"): a team's line, every one of its line-up with games there, or a player's, their own record
    there or 60 games. The seats' records it was read off before differ from those, and left out maps a
    side's own chart shows. It is as large as the better-known side's games there, each side's the mean
-   of its line-up's, so a map only the other side plays is as plain as one both do. */
+   of its line-up's, so a map only the other side plays is as plain as one both do - against each side's own
+   busiest map, so a side with fewer games is drawn as large as the other - and solid from `EVIDENT` there. */
 function panelSides(sides, y, pool = EV, chanceOn = null) {
   const maps = pool.filter(m => sides.every(s => s.by[m]));
   const games = (sd, m) => sd.by[m].play.reduce((t, x) => t + x.games, 0) / sd.by[m].play.length;
@@ -4125,8 +4168,10 @@ function panelSides(sides, y, pool = EV, chanceOn = null) {
     `${esc(sides[0].title)}&rsquo;s ${abs ? "Est Elo" : "strength"} on the map →`,
     `${esc(sides[1].title)}&rsquo;s ${abs ? "Est Elo" : "strength"} on the map →`, axisFmt(sides[0]), axisFmt(sides[1]));
   const either = m => Math.max(games(sides[0], m), games(sides[1], m));
-  const most = Math.max(...shown.map(either)) || 1;
-  const marks = shown.map(m => ({ m, ...mapShare(either(m), most), q: civRegion(dev(sides[0], m), dev(sides[1], m), MAP_MATCH) }))
+  const most = sides.map(sd => Math.max(...shown.map(m => games(sd, m))) || 1);
+  const share = m => Math.max(...sides.map((sd, i) => games(sd, m) / most[i]));
+  const marks = shown.map(m => ({ m, size: mapShare(share(m), 1).size, a: evident(either(m)),
+      q: civRegion(dev(sides[0], m), dev(sides[1], m), MAP_MATCH) }))
     .sort((a, b) => a.size - b.size);
   // the plane's classes are styled under `.civsvg`
   const svg = `<g class="civsvg">${P.svg}</g>` + marks.map(k => `<g${mapPick(k.m)} style="opacity:${k.a.toFixed(2)}"${
@@ -4771,7 +4816,7 @@ function panelGroups(rows, y) {
   const own = p => ALLMAPS.filter(c => { const cell = cells(p)[c];
     return cell && (cell.kind === "map" || (cell.n || 0) >= 60); });
   const lines = live.map(({ p, tone }) => ({ p, tone, ref: abs ? LV(p) : 0,
-    marks: own(p).map(c => ({ c, v: abs ? CELL(p, c) : d(p, c), n: cells(p)[c].n || 0, tip: cardOf(c) })) }));
+    marks: own(p).map(c => ({ c, v: abs ? CELL(p, c) : d(p, c), n: cells(p)[c].n || 0, ev: cells(p)[c].n || 0, tip: cardOf(c) })) }));
   const S = mapScale(lines.flatMap(l => l.marks.map(m => m.v)), abs, lines.map(l => l.ref));
   const named = lines.length > 1;
   let top = y + 8, svg = "";
@@ -4786,8 +4831,9 @@ function panelGroups(rows, y) {
 
 /* **Maps are a line of their icons**, like the civilizations (Daniel, 2026-11-11: "like the civ
    line with map images"; and for several, "still the maps graph, not the radar"): each map at its
-   figure, as large as the games under it - area in proportion to the most on the line - and as
-   solid. A map with no record of its own carries its type's reading or a level, so it is left out
+   figure, as large as the games under it - area in proportion to the most on the line - and solid
+   from `EVIDENT` games (`ev`; a mark without it, Units' or Timing's, is as solid as it is large). A map
+   with no record of its own carries its type's reading or a level, so it is left out
    rather than drawn twenty times over at one point. Kept within `spread` icons of the line, the
    largest placed first, each where it overlaps least, as `civChart` does. */
 const MAPLINE = { l: 30, r: 30, icon: 46, least: 0.3, gap: 1, spread: 1, b: 44 };
@@ -4826,7 +4872,7 @@ function mapStrip(top, marks, S, last = true) {
       text-anchor="middle">${S.none || "No map with a record of its own"}</text>`, mid: top + 16, h: top + (last ? 40 : 30) };
   }
   const most = Math.max(...marks.map(m => m.n)) || 1;
-  marks = marks.map(m => ({ ...m, ...mapShare(m.n, most), cx: X(m.v), dy: 0 }));
+  marks = marks.map(m => ({ ...m, ...mapShare(m.n, most), ...(m.ev != null ? { a: evident(m.ev) } : {}), cx: X(m.v), dy: 0 }));
   // a map icon is a diamond, so its circle is drawn inside the square it comes in
   const R = m => G.icon * m.size * 0.4, cap = G.icon * G.spread;
   const done = [];
@@ -4867,7 +4913,7 @@ function mapStrip(top, marks, S, last = true) {
 function teamLine(top, key, abs) {
   const by = linesOf(key, ALLMAPS, true), overall = ACROSS(Object.values(by).map(r => r.best3));
   const games = m => harmonic(by[m].play.map(x => x.games));
-  const marks = Object.keys(by).filter(m => games(m) > 0).map(m => ({ c: m, n: games(m),
+  const marks = Object.keys(by).filter(m => games(m) > 0).map(m => ({ c: m, n: games(m), ev: games(m),
     v: (abs ? overall : 0) + lineupWorth(by[m], overall),
     tip: (() => {
       const worth = lineupWorth(by[m], overall), reach = Math.max(100, Math.abs(worth), ...by[m].play.map(x => Math.abs(x.elo - overall)));
@@ -5197,15 +5243,84 @@ const openChips = (S = OPEN) => {
   const chip = (kind, label, img) => `<button type="button" class="ghost ofilter" data-openunfilter="${kind}"
       aria-label="Show every ${{ civ: "civilisation", map: "map", build: "build" }[kind]}">${img || ""}${esc(label)} ✕</button>`;
   const map = S.map.replace(/^\w+:/, ""), build = openPicked(S), pic = src => src ? `<img src="${src}" alt="">` : "";
-  return (build ? chip("build", build, `<svg viewBox="0 0 20 20" aria-hidden="true">${buildEmblem(build, S.focus.gi, 10, 10, 18)}</svg>`) : "")
+  return (build ? chip("build", openLabel(build, S), `<svg viewBox="0 0 20 20" aria-hidden="true">${buildEmblem(build, S.focus.gi, 10, 10, 18)}</svg>`) : "")
     + (S.civ ? chip("civ", S.civ, pic(civIcon(S.civ))) : "") + (S.map ? chip("map", map, pic(mapIcon(map))) : "");
 };
 // the build clicked on Openings (Daniel, 2026-11-12: "When you have selected specific build it should update also the
 // units, timings, production, value, everything"), while it is about the players shown
 const openPicked = (S = OPEN) => {
   const f = S.focus;
-  return f && f.build && String(f.pid).split("+").every(id => (S.rows || []).some(r => String(r.p.pid) === id)) ? f.build : "";
+  return f && f.build && String(f.pid).split("+").every(id => (S.rows || []).some(r => String(r.p.pid) === id)) ? openFold(f.build, S) : "";
 };
+/* **Builds folded by likeness**, a level of detail (Daniel, 2026-11-13: "group by similarity? the default level could
+   be based on how many different openings are there and what evidence they have"). Two builds are as far apart as
+   the parts of their names they do not share (`openNameParts`), and 0.1 where only a "2x" or the order tells them
+   apart. A pair at a time folds, never across groups, the one costing least: its distance, the mean over its
+   builds' pairs by games, times the smaller one's games - so a build of a game or two joins its nearest kin before
+   two with evidence of their own join each other. Every build is the finest level, a build a group the coarsest. A
+   folded build goes by its commonest name, which is what `OPEN.fold` maps every name to.
+   Five steps are offered, not every level (Daniel, the same day: "fixed steps like 1-4 or 1-5 and preselected
+   sensible default"): a build a group, `openFoldAuto`'s level in the middle, every build, and halfway between
+   them by the number of icons, as a ratio; steps that land on one level are one. `OPEN.detail` is the step. */
+const OPEN_FOLD_MOST = 12;
+const openFold = (name, S = OPEN) => (S.fold && S.fold.get(name)) || name;
+const openNameParts = name => new Set((name || "").split(/ \+ | into /).flatMap(part => {
+  const p = part.replace(/^2x\s*/, "");
+  return p.startsWith("FC ") ? ["FC", p.slice(3)] : [p];
+}));
+// `counts` name -> {n, gi}; every level from the finest, each a list of folds, each its names commonest first
+function openFoldLevels(counts) {
+  const names = [...counts.keys()].sort((a, b) => counts.get(b).n - counts.get(a).n || a.length - b.length || a.localeCompare(b));
+  const parts = names.map(openNameParts), D = new Map(), pair = (i, j) => i < j ? `${i}|${j}` : `${j}|${i}`;
+  names.forEach((a, i) => names.forEach((b, j) => {
+    if (j <= i || counts.get(a).gi !== counts.get(b).gi) return;
+    const both = [...parts[i]].filter(p => parts[j].has(p)).length, any = parts[i].size + parts[j].size - both;
+    D.set(pair(i, j), both === any ? 0.1 : 1 - both / any);
+  }));
+  let folds = names.map((name, id) => ({ id, names: [name], n: counts.get(name).n, gi: counts.get(name).gi })), next = names.length;
+  const levels = [folds.map(f => f.names)];
+  for (;;) {
+    let best = null;
+    folds.forEach((A, a) => folds.forEach((B, b) => {
+      if (b <= a || A.gi !== B.gi) return;
+      const cost = D.get(pair(A.id, B.id)) * Math.min(A.n, B.n), big = Math.max(A.n, B.n);
+      if (!best || cost < best.cost - 1e-9 || (cost < best.cost + 1e-9 && big > best.big)) best = { A, B, cost, big };
+    }));
+    if (!best) break;
+    const { A, B } = best, m = { id: next++, names: [...A.names, ...B.names].sort((a, b) => counts.get(b).n - counts.get(a).n),
+                                 n: A.n + B.n, gi: A.gi };
+    folds = folds.filter(f => f !== A && f !== B);
+    folds.forEach(f => { if (f.gi === m.gi) D.set(pair(m.id, f.id), (A.n * D.get(pair(A.id, f.id)) + B.n * D.get(pair(B.id, f.id))) / m.n); });
+    folds.push(m);
+    levels.push(folds.map(f => f.names));
+  }
+  return levels;
+}
+// the level drawn first: the finest with at most `OPEN_FOLD_MOST` builds and none under `OPEN_REGULAR` games that could still fold
+function openFoldAuto(levels, counts) {
+  const gi = f => counts.get(f[0]).gi, n = f => f.reduce((t, name) => t + counts.get(name).n, 0);
+  const at = levels.findIndex(fs => fs.length <= OPEN_FOLD_MOST
+    && fs.every(f => n(f) >= OPEN_REGULAR || !fs.some(o => o !== f && gi(o) === gi(f))));
+  return at < 0 ? levels.length - 1 : at;
+}
+// the levels the steps stand for, coarsest first, and which of them is the default
+function openFoldSteps(levels, auto) {
+  const n = i => levels[i].length, all = n(0), groups = n(levels.length - 1), mid = n(auto);
+  const at = c => levels.length - 1 - (Math.round(c) - groups);
+  const steps = [...new Set([groups, Math.sqrt(groups * mid), mid, Math.sqrt(mid * all), all].map(at))];
+  return { steps, auto: steps.indexOf(auto) };
+}
+// what a build on the chart is called: its own name, or with how many more it stands for
+const openLabel = (b, S = OPEN) => {
+  const f = S.folded && S.folded.get(b);
+  return !f || f.names.length < 2 ? b : f.whole ? `Every ${OPEN_SHOWN[f.gi][1]} build` : `${b} & ${f.names.length - 1} more`;
+};
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-opendetail]");
+  if (!t) return;
+  OPEN.detail = +t.dataset.opendetail;
+  drawOpenings();
+});
 /* Microsoft drops a profile's replays once it has played about 170-200 more games (aoe-match-history
    #49), so past a run of missing ones the rest of a history is gone too, bar the odd game on another
    player's copy: DanielCZ's 1v1s on 2026-11-05 had all 32 since 12 September, then 8 of 57 back to
@@ -5350,6 +5465,9 @@ async function openOne(g, S = OPEN) {
   }
 }
 function drawOpenings(rows = OPEN.rows) {
+  // a level picked is a number of builds, which means nothing for other players
+  const who = rows.map(r => r.p.pid).join("+");
+  if (who !== OPEN.detailFor) { OPEN.detail = null; OPEN.detailFor = who; }
   OPEN.rows = rows;
   OPEN.lines = new Map();
   const box = $("#propen");
@@ -5562,6 +5680,26 @@ function panelOpenings(rows, y, S = OPEN) {
              plays: kept.map(x => ({ g: x.g, o: x.o.me, them: x.o.them || [], p: r.p })) };
   });
   const per = pool, anyRead = per.some(x => x.read);
+  const counts = new Map();
+  per.forEach(x => x.plays.forEach(e => {
+    const name = e.o.name || "Unnamed", c = counts.get(name) || { n: 0, by: new Map() }, gi = openShown(e.o.group);
+    c.n++;
+    c.by.set(gi, (c.by.get(gi) || 0) + 1);
+    counts.set(name, c);
+  }));
+  counts.forEach(c => { c.gi = [...c.by].sort((a, b) => b[1] - a[1])[0][0]; });
+  const levels = openFoldLevels(counts), auto = openFoldAuto(levels, counts);
+  const { steps, auto: autoStep } = openFoldSteps(levels, auto);
+  const step = S.detail == null ? autoStep : Math.min(steps.length - 1, S.detail), level = steps[step];
+  S.fold = new Map();
+  S.folded = new Map();
+  levels[level].forEach(f => {
+    const gi = counts.get(f[0]).gi, inGroup = levels[0].filter(o => counts.get(o[0]).gi === gi).length;
+    f.forEach(name => S.fold.set(name, f[0]));
+    S.folded.set(f[0], { gi, names: f.map(name => [name, counts.get(name).n]), whole: f.length > 1 && f.length === inGroup });
+  });
+  const detail = steps.length < 2 ? "" : `<div class="seg sm" role="group" aria-label="Detail"${tipAttr("Detail")}>${steps.map((l, k) =>
+    `<button type="button" data-opendetail="${k}" aria-selected="${k === step}" aria-label="${levels[l].length} builds">${k + 1}</button>`).join("")}</div>`;
   // with nothing read the button is all there is to the panel (Daniel, 2026-11-05: "should be better visible")
   if (!S.on && !anyRead && !S.err)
     return { title: "Openings", ctl: "",
@@ -6000,8 +6138,8 @@ function panelOpenings(rows, y, S = OPEN) {
 
   /* One player is a line of their builds (Daniel, 2026-11-11: "similar things as for maps and civs"):
      each at their strength with it in Elo against their usual over every build, the dashed line (2026-
-     11-12: "instead of win rate could there be the elos"), as large and as solid as their games with it
-     against their commonest build's, placed as `mapStrip` places maps. A team is one such line, each
+     11-12: "instead of win rate could there be the elos"), as large as their games with it against their
+     commonest build's and solid from `EVIDENT` games of it, placed as `mapStrip` places maps. A team is one such line, each
      build carried by whoever on it most likely opens with it, in their colour ("who is most likely from
      the team to do the opening and is good with the opening"). Two sides are two such lines on one scale
      (2026-11-12: "instead of 2 axis chart make it 2 rows chart similar to Units and Timings"), a build both
@@ -6011,7 +6149,14 @@ function panelOpenings(rows, y, S = OPEN) {
      strength is `openResult`'s, so against the ratings of each game, and a build with few games is
      pulled toward the player's usual: a 1-0 build would otherwise sit far out on one game. */
   const BUILDLINE = { icon: 40, least: 0.3, gap: 1, spread: 1 };
-  const buildOf = e => e.o.name || "Unnamed";
+  const buildOf = e => openFold(e.o.name || "Unnamed", S);
+  // a build standing for several wears a second tile behind it
+  const emblem = (b, gi, cx, cy, sz, ring) => {
+    const f = S.folded.get(b), o = sz * 0.14;
+    return (f && f.names.length > 1 ? `<rect x="${(cx - sz / 2 + o).toFixed(1)}" y="${(cy - sz / 2 - o).toFixed(1)}" width="${
+      sz.toFixed(1)}" height="${sz.toFixed(1)}" rx="${(sz * 0.22).toFixed(1)}" style="fill:var(--og-${gi + 1});opacity:.45"/>` : "")
+      + buildEmblem(b, gi, cx, cy, sz, ring);
+  };
   const groupOf = es => +tally(es, e => String(openShown(e.o.group)))[0][0];
   // a build's Elo against the player's usual, which is 0; no rated game leaves it at the usual
   const readingsOf = x => {
@@ -6044,13 +6189,16 @@ function panelOpenings(rows, y, S = OPEN) {
   // `cs` the players to show, or {never: a name, tone} for one who never opens with it
   const buildTip = (b, gi, cs) => {
     const reach = Math.max(50, ...cs.filter(c => c.x).map(c => Math.abs(c.v)));
-    return tipHead(esc(b), `<svg viewBox="0 0 24 24" aria-hidden="true">${buildEmblem(b, gi, 12, 12, 22)}</svg>`, esc(OPEN_SHOWN[gi][1]))
+    const f = S.folded.get(b), most = f ? Math.max(...f.names.map(([, n]) => n)) : 1;
+    return tipHead(esc(openLabel(b, S)), `<svg viewBox="0 0 24 24" overflow="visible" aria-hidden="true">${emblem(b, gi, 12, 12, 22)}</svg>`,
+        esc(OPEN_SHOWN[gi][1]))
       + tipRows(cs.map(c => {
         if (!c.x) return tipRow(c.tone || null, esc(c.never), "", "", "never opens with it");
         const [w, l] = record(c.bs);
         return tipRow(c.x.tone, esc(c.x.p.name), tipDiv(c.v, reach, c.x.tone), PCSCALE === "abs" ? r0(LV(c.x.p) + c.v) : civRel(c.v),
           `${pct(c.share)} of games${w + l ? ` · ${w}–${l}` : ""}`);
-      }));
+      }))
+      + (f && f.names.length > 1 ? tipRows(f.names.map(([name, n]) => tipRow(null, esc(name), tipBar(n, most, `--og-${gi + 1}`), String(n), ""))) : "");
   };
   const focusOf = (pid, gi, b = "") => `${pid}|${gi}${b ? `|${b}` : ""}`;
   const ringAt = (cx, cy, side) => `<rect x="${(cx - side / 2 - 3).toFixed(1)}" y="${(cy - side / 2 - 3).toFixed(1)}" width="${
@@ -6089,7 +6237,7 @@ function panelOpenings(rows, y, S = OPEN) {
   const shown = (() => {
     if (match || !clicked || !S.focus.build) return null;
     const bs = byBuild(lone.plays.filter(e => openShown(e.o.group) === focusNow.gi), buildOf);
-    const want = S.build.get(`${lone.p.pid}|${focusNow.gi}`);
+    const want = openFold(S.build.get(`${lone.p.pid}|${focusNow.gi}`), S);
     return bs.some(([n]) => n === want) ? want : bs.length ? bs[0][0] : null;
   })();
   /* two sides are one plane of how often each opens a build (Daniel, 2026-11-12, of a preview: "looks quite
@@ -6102,8 +6250,8 @@ function panelOpenings(rows, y, S = OPEN) {
     const pts = builds(reads).map(b => {
       const c = carrierOf(A, b) || carrierOf(Bs, b), who = [...A, ...Bs].map(r => r.by.get(b)).filter(k => k && k.bs.length >= OPEN_REGULAR);
       const players = who.length ? who : [c];
-      return { x: games(A, b) / total(A), y: games(Bs, b) / total(Bs), n: games(A, b) + games(Bs, b),
-        face: (cx, cy, sz) => buildEmblem(b, c.gi, cx, cy, sz, players.map(k => `var(${k.x.tone})`)),
+      return { x: games(A, b) / total(A), y: games(Bs, b) / total(Bs), n: games(A, b) + games(Bs, b), ev: games(A, b) + games(Bs, b),
+        face: (cx, cy, sz) => emblem(b, c.gi, cx, cy, sz, players.map(k => `var(${k.x.tone})`)),
         attrs: ` class="obld" data-carry="${esc(`|${players.map(k => k.x.p.name).join("|")}|`)}" data-openfocus="${esc(focusOf(pairOf(b), c.gi, b))}"`,
         tip: buildTip(b, c.gi, [...everyone(A, b), ...everyone(Bs, b)]), ringed: pairIds.length && S.focus.build === b };
     });
@@ -6122,7 +6270,7 @@ function panelOpenings(rows, y, S = OPEN) {
     lines.forEach(({ rs, cs }, li) => {
       const most = Math.max(...cs.map(c => c.share)), team = rs.length > 1;
       const marks = cs.map(c => ({ c, dy: 0, size: BUILDLINE.least + (1 - BUILDLINE.least) * Math.sqrt(c.share / most),
-        a: CIV_FAINT + (1 - CIV_FAINT) * c.share / most }));
+        a: evident(c.bs.length) }));
       const cap = BUILDLINE.icon * BUILDLINE.spread, done = [];
       for (const m of marks.slice().sort((m, n) => n.size - m.size)) {
         m.cx = PX(val(m.c));
@@ -6154,7 +6302,7 @@ function panelOpenings(rows, y, S = OPEN) {
         const who = playersOf(rs, c);
         s += `<g class="obld" style="opacity:${m.a.toFixed(2)}" data-carry="${esc(`|${who.map(k => k.x.p.name).join("|")}|`)}" data-openfocus="${
           esc(match ? focusOf(pairOf(c.b), c.gi, c.b) : focusOf(c.x.p.pid, c.gi, c.b))}"${
-          tipAttr(tip)}>${buildEmblem(c.b, c.gi, m.cx, cy, side, team ? who.map(k => `var(${k.x.tone})`) : undefined)}</g>`;
+          tipAttr(tip)}>${emblem(c.b, c.gi, m.cx, cy, side, team ? who.map(k => `var(${k.x.tone})`) : undefined)}</g>`;
         if (match ? pairIds.length && S.focus.build === c.b : c.b === shown) hits += ringAt(m.cx, cy, side);
       }
       top = y1 + 8;
@@ -6169,7 +6317,7 @@ function panelOpenings(rows, y, S = OPEN) {
   if (match && builds(reads).length) {
     // with who opens with it, where a side has several
     const chip = (c, fig, rs) => `<span class="civtop"><svg width="20" height="20" viewBox="0 0 20 20" overflow="visible" aria-hidden="true">${
-      buildEmblem(c.b, c.gi, 10, 10, 16)}</svg>${esc(c.b)} <b>${fig}</b>${rs.length > 1 ? ` <i class="owho" style="background:var(${
+      emblem(c.b, c.gi, 10, 10, 16)}</svg>${esc(openLabel(c.b, S))} <b>${fig}</b>${rs.length > 1 ? ` <i class="owho" style="background:var(${
       c.x.tone})"></i>${esc(clip(c.x.p.name, 12))}` : ""}</span>`;
     const expect = carriedOf(Bs).slice(0, 3), known = carriedOf(A, bestOf).filter(c => c.v > 0).sort((p, q) => q.v - p.v).slice(0, 3);
     draft = `<div class="civkey civdraft"><b>Expect</b>${expect.map(c => chip(c, pct(c.share), Bs)).join("")}<b>Used/Known</b>${
@@ -6183,7 +6331,7 @@ function panelOpenings(rows, y, S = OPEN) {
   }
 
   const left = per.some(x => !x.list || x.list.listing || (!x.past && x.games.some(g => !S.read.has(openKey(g)))));
-  const ctl = openChips(S) + segCtl([scaleSwitch()]) + `<div class="seg sm" role="group"${tipAttr(readTip)}><button type="button" data-openread="${S.on ? "stop" : "read"}"
+  const ctl = openChips(S) + detail + segCtl([scaleSwitch()]) + `<div class="seg sm" role="group"${tipAttr(readTip)}><button type="button" data-openread="${S.on ? "stop" : "read"}"
       aria-selected="${S.on}"${!S.on && !left ? " disabled" : ""}>${
       S.on ? "Stop" : !left ? "All read" : anyRead ? "Read more" : "Read replays"}</button></div>`;
   const title = "Openings";
@@ -6218,7 +6366,7 @@ function panelOpenings(rows, y, S = OPEN) {
     const own = x => x.plays.map(e => ({ ...e, x }));
     if (!xs.some(x => own(x).length)) return "";
     const newest = (a, b) => (b.g.started || "").localeCompare(a.g.started || "");
-    const nameOf = e => e.o.name || "Unnamed";
+    const nameOf = e => openFold(e.o.name || "Unnamed", S);
     /* Under a build's own game, the one top-100 game it is compared with, and the four next nearest to
        pick instead: its Town Centre bar, how alike it is, its links and the group of games it stands
        for, the villagers' work at the Feudal click, halfway to Feudal and at the Castle click, and every
@@ -6456,7 +6604,7 @@ const OPEN_TIMED = [["feudal click", "Feudal click", "tech-feudal-age"], ["castl
   ["Ballistics", "Ballistics", "tech-ballistics"], ["armour", "First armour"]];
 const OPEN_ARMOUR = ["Padded Archer Armor", "Scale Mail Armor", "Scale Barding Armor"];
 const openPlaysOf = (r, S = OPEN, build = openPicked(S)) => openGames(r.p, S).map(g => ({ g, a: S.read.get(openKey(g)) }))
-  .filter(x => x.a && x.a.me && !x.a.error && openWanted(x.g, S) && (!build || (x.a.me.name || "Unnamed") === build))
+  .filter(x => x.a && x.a.me && !x.a.error && openWanted(x.g, S) && (!build || openFold(x.a.me.name || "Unnamed", S) === build))
   .map(x => ({ g: x.g, o: x.a.me }));
 const openWeight = g => 0.5 ** (Math.max(0, calEnd() - Date.parse(g.started || 0)) / 864e5 / OPEN_HALF);
 const openNorms = () => ((DATA.topBuilds || {}).norms || {})[SOLO() ? "1v1" : "team"] || null;
@@ -6469,7 +6617,8 @@ function openNorm(N, o, g, measure) {
    quite good"; "do the units as two axes"): across the first side's share, up the other's, on a square-root
    scale so the rare ones are told apart, the diagonal where both sides are as likely and above it what the
    other side brings more. `rel` is each side's share less the top 100's, on a straight scale about 0. `pts`
-   are {x, y, n, face(cx, cy, sz), attrs, tip, ringed}; drawn from `top`, and returns where it ends. */
+   are {x, y, n, ev, face(cx, cy, sz), attrs, tip, ringed}, `ev` the games that make it solid (`EVIDENT`); drawn from
+   `top`, and returns where it ends. */
 function twoPlane(top, pts, { a, b, what, rel = false }) {
   const x0 = PL, x1 = PW - PRT, y0 = top + 24, y1 = y0 + 500, sz = 30;
   let X, Y, ticks, fmt;
@@ -6507,7 +6656,7 @@ function twoPlane(top, pts, { a, b, what, rel = false }) {
         rel ? `${esc(a)}, more than the ${TOP_N}` : `how often ${esc(a)} ${what}`} →</text>`
     + `<text class="pax" transform="translate(${x0 - 54} ${((y0 + y1) / 2).toFixed(1)}) rotate(-90)" font-size="12" text-anchor="middle">${
         rel ? `${esc(b)}, more than the ${TOP_N}` : `how often ${esc(b)} ${what}`} →</text>`;
-  s += pts.slice().sort((m, n) => m.n - n.n).map(p => `<g${p.attrs || ""} style="opacity:${(0.35 + 0.65 * Math.sqrt(p.n / nMost)).toFixed(2)}"${
+  s += pts.slice().sort((m, n) => m.n - n.n).map(p => `<g${p.attrs || ""} style="opacity:${(p.ev != null ? evident(p.ev) : 0.35 + 0.65 * Math.sqrt(p.n / nMost)).toFixed(2)}"${
       tipAttr(p.tip)}>${p.face(p.cx, p.cy, sz)}</g>`).join("")
     + pts.filter(p => p.ringed).map(p => `<rect x="${(p.cx - sz / 2 - 3).toFixed(1)}" y="${(p.cy - sz / 2 - 3).toFixed(1)}" width="${sz + 6}"
         height="${sz + 6}" rx="${(sz * 0.3).toFixed(1)}" fill="none" stroke="var(--ink)" stroke-width="2" pointer-events="none"/>`).join("");
@@ -6642,8 +6791,8 @@ function panelUnits(rows) {
 /* **Timing** (Daniel, 2026-11-12: "the timings of the age ups and eco/military technologies, first army
    created could be put into one panel similar to maps, civs with icons"): a line a player, each of
    `OPEN_TIMED` as its icon at how much later than the top 100 on the same builds they reach it - the
-   middle of their games' differences, of the games that reached it by 25:00 - or at its time
-   (absolute), as large and as solid as the share of their games that reached it by then. One none of
+   middle of their games' differences, of the games that reached it by 25:00, a build at a time - or at
+   its time (absolute), as large and as solid as the share of their games that reached it by then. One none of
    their games reached by then stands past every time, at the right edge. */
 const OPEN_TIMED_SHOWN = 0.1, OPEN_TIMED_G = { icon: 34, spread: 2 };
 /* Kaplan-Meier as weights handed to the right: a game that ended before 25:00 without it gives its weight
@@ -6671,9 +6820,9 @@ function panelTiming(rows) {
   const groups = openGroups(rows, r => openPlaysOf(r).map(e => ({ ...e, m: openMeasures(e.o, e.g), w: openWeight(e.g) })));
   if (!groups.length) return null;
   const norm = (e, key) => N ? openNorm(N, e.o, e.g, key) : null;
-  // a milestone over some games: the share that reached it by 25:00, the middle and middle half of when, and
-  // the middle of how much later than the top 100 on each game's build; none where no game says either way
-  const timed = (games, key) => {
+  // a milestone over some games of one build: the share that reached it by 25:00, the middle and middle half of
+  // when, and the middle of how much later than the top 100 on it; none where no game says either way
+  const timedOne = (games, key) => {
     const hit = e => e.m[key] != null;
     if (!games.some(e => hit(e) || e.m.end >= OPEN_TECH_BY)) return null;
     const { share, kept } = openReach(games.map(e => ({ e, t: hit(e) ? e.m[key] : Math.min(e.m.end, OPEN_TECH_BY), w: e.w, hit: hit(e) })));
@@ -6683,6 +6832,22 @@ function panelTiming(rows) {
     return { n: games.length, share, topShare: openWmean(games.map(e => [norm(e, `${key}|share`), e.w]).filter(d => d[0] != null)),
              own: q(0.5), a: q(0.25), b: q(0.75), top: refs.length ? weightedQuantile(refs, 0.5) : null,
              rel: leads.length ? weightedQuantile(leads, 0.5) : null };
+  };
+  /* Over several builds, each build's figures and then their mean, weighted by how often it was played and, for
+     a time, by how often it reached the milestone (Daniel, 2026-11-13: "median from different builds, not median
+     build"). The median over all the games pooled was the commonest build's: 60% fast castles clicking Castle at
+     15:00 and 40% Feudal builds at 21:00 read 15:00. Units needs no such step, its presence being a mean. */
+  const timed = (games, key) => {
+    const by = new Map();
+    games.forEach(e => { const b = e.o.name || "Unnamed"; by.set(b, [...(by.get(b) || []), e]); });
+    if (by.size < 2) return timedOne(games, key);
+    const parts = [...by.values()].map(es => ({ s: timedOne(es, key), w: es.reduce((t, e) => t + e.w, 0) })).filter(p => p.s);
+    if (!parts.length) return null;
+    const mean = (f, weight) => openWmean(parts.map(p => [f(p.s), weight(p)]).filter(([v]) => v != null));
+    const played = p => p.w, reached = p => p.w * p.s.share;
+    return { n: games.length, share: mean(s => s.share, played), topShare: mean(s => s.topShare, played),
+             own: mean(s => s.own, reached), a: mean(s => s.a, reached), b: mean(s => s.b, reached),
+             top: mean(s => s.top, reached), rel: mean(s => s.rel, reached) };
   };
   const commonest = (games, of) => {
     const n = new Map();
@@ -7053,11 +7218,10 @@ function drawOne() {
              [panelWinTempo, panelLossTempo]);
   const civRows = rows.map(({ p, tone, seat, label }) =>
     ({ name: label, who: p.name, tone, data: civOf(p.pid, seat) }));
-  /* On 1v1 three or four are each on their own everywhere but here, where the first is a side
-     against the rest (Daniel, 2026-11-04) */
+  // on 1v1 three or four are each on their own everywhere but here, where the first meets one of the rest (`draftOneOf`)
   const [first, ...rest] = civRows;
   const vs = SOLO() && rest.length > 1 && [civSide(first.name, RAMP.a[0], [first]),
-    civSide(`${rest[0].name}'s team`, RAMP.b[0], rest)];
+    civSide("the others", RAMP.b[0], rest, true)];
   const match = vs && vs.every(s => s.live.length);
   if (match) civMatch($("#prciv"), ...vs);
   else civChart($("#prciv"), civRows);
@@ -7396,9 +7560,14 @@ const askBuilds = (call, args) => buildsFrame().then(frame => new Promise((ok, n
   }, BUILDS_WAIT);
   frame.contentWindow.postMessage({ scoutAsk: { id, call, args } }, "*");
 }));
-// the editor takes a replay dropped anywhere on it; one dropped on the header would open the file
-for (const type of ["dragover", "drop"])
-  addEventListener(type, e => { if (VIEW === "builds") e.preventDefault(); });
+// the editor takes a replay dropped anywhere on it, so one dropped on the header must not open the
+// file; on any other view a dropped file is an analysis
+const carriesFile = e => !!e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+addEventListener("dragover", e => { if (VIEW === "builds" || carriesFile(e)) e.preventDefault(); });
+addEventListener("drop", e => {
+  if (VIEW !== "builds" && carriesFile(e) && e.dataTransfer.files[0]) importAnalysis(e.dataTransfer.files[0]);
+  if (VIEW === "builds" || carriesFile(e)) e.preventDefault();
+});
 $("#tabs").onclick = e => {
   const b = e.target.closest("button[data-view]"); if (!b) return;
   showView(b.dataset.view);
@@ -7538,6 +7707,139 @@ function applyRoute(hash) {
 const onRoute = () => { if (location.hash !== ROUTE_AT) applyRoute(location.hash); };
 addEventListener("popstate", onRoute);
 addEventListener("hashchange", onRoute);
+
+/* ---- an analysis as a file ---------------------------------------------------
+   What this browser has read - a ⟳, a player off the ladder, Openings' replays - is kept where no
+   other visitor can reach it, so Export writes it to a file and Import, or the file dropped on the
+   page, puts it back with the view it was saved on. A level is good only against the fits it was
+   read beside, so a file from another build brings no levels; an Openings answer carries its
+   reader's signature, so one from another reader is stored and named again on Read (`openOne`). */
+const ANALYSIS = 1;
+const levelsBuild = () => { const z = DATA.zext || {}; return `${z.refit || ""}|${z.py || ""}`; };
+const dayName = d => /^\d{4}-\d\d-\d\d$/.test(d || "")
+  ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }) : "";
+const listOf = v => Array.isArray(v) ? v : [];
+function fileSay(btn, state, say) {
+  btn.dataset.state = state;
+  btn.dataset.tip = esc(say);
+  btn.setAttribute("aria-label", say);
+  if (TIPEL === btn) tip.innerHTML = btn.dataset.tip;
+}
+async function analysisOut() {
+  const shown = new Set(OPEN.rows.map(r => r.p.pid));
+  const lists = [...OPEN.lists].filter(([pid, l]) => shown.has(pid) && !l.listing).map(([pid, l]) => [pid, l.games]);
+  const keys = lists.flatMap(([, gs]) => gs.map(openKey)).filter(k => OPEN.read.has(k));
+  const games = await Promise.all(keys.map(async k => [k, (await OPEN_DB.get(k)) || { shown: OPEN.read.get(k) }]));
+  return {
+    scout: ANALYSIS, page: DATA.ladder || "rm", asOf: DATA.asOf || null, levels: levelsBuild(), reader: DATA.cardsV || null,
+    saved: new Date().toISOString(), route: routeOf(),
+    newcomers: LADDER.players.map(p => ({ row: p, detail: DETAIL.get(String(p.pid)) || null })),
+    refits: [...UPD].filter(([, u]) => u.state === "done")
+      .map(([pid, { over, games, fresh, whole, panels, file }]) => [pid, { over, games, fresh, whole, panels, file }]),
+    recs: [...EXTRA_RECS],
+    openings: { sig: OPEN_SIG_NOW, civ: OPEN.civ, map: OPEN.map, focus: OPEN.focus, lists, games },
+  };
+}
+async function exportAnalysis() {
+  const btn = $("#export");
+  try {
+    const text = JSON.stringify(await analysisOut());
+    const blob = await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).blob();
+    const who = fold([SIDE.a, SIDE.b].filter(Boolean).map(k => TEAM_BY[k].title).join(" vs "))
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `aoe2scout-${who ? who + "-" : ""}${new Date().toISOString().slice(0, 10)}.json.gz`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60e3);
+    fileSay(btn, "", "Export analysis");
+  } catch (e) {
+    fileSay(btn, "error", `Export analysis: ${e.message}`);
+  }
+}
+/* The file is somebody else's text, and a panel puts a string wherever it is wanted - into markup,
+   an attribute, a tooltip's HTML or a link - so nothing in it may open a tag, end an attribute or
+   be a link that runs. */
+const unmarked = v => typeof v === "string"
+  ? (/^javascript:/i.test(v.replace(/[\x00-\x20]/g, "")) ? "" : v.replace(/<(?=[a-z!/?])/gi, "‹").replace(/"/g, "″"))
+  : Array.isArray(v) ? v.map(unmarked)
+  : v && typeof v === "object"
+    ? Object.fromEntries(Object.entries(v).filter(([k]) => k !== "__proto__").map(([k, x]) => [unmarked(k), unmarked(x)]))
+  : v;
+async function fileText(file) {
+  const head = new Uint8Array(await file.slice(0, 2).arrayBuffer());
+  return head[0] === 0x1f && head[1] === 0x8b
+    ? new Response(file.stream().pipeThrough(new DecompressionStream("gzip"))).text() : file.text();
+}
+function analysisLevels(x) {
+  const file = String(x.saved || "").slice(0, 10);
+  for (const { row, detail } of listOf(x.newcomers).filter(n => n && n.row && typeof n.row === "object")) {
+    const q = row.pid;
+    if (!Number.isSafeInteger(q) || FLAT.has(q)) continue;
+    const url = ladderUrl(q), a = listOf(listOf(row.alts)[0]);
+    enlist({ ...row, name: freeName(String(row.name), q), url, team: LADDER.title, teamKey: LADDER.key, unsigned: true,
+             alts: [[String(a[0] ?? row.name), a[1] ?? null, a[2] ?? null, a[3] ?? null, false, url, q]] });
+    if (detail && typeof detail === "object") DETAIL.set(String(q), detail);
+  }
+  // a player this browser has read itself keeps its own reading
+  for (const [pid, u] of listOf(x.refits)) {
+    if (!FLAT.has(pid) || !u || !u.over || typeof u.over !== "object" || ["done", "busy"].includes((UPD.get(pid) || {}).state)) continue;
+    const { over, games, fresh, whole, panels } = u;
+    UPD.set(pid, { state: "done", over, games, fresh, whole, ...(panels ? { panels } : {}), file: u.file || file });
+  }
+  for (const [pid, recs] of listOf(x.recs))
+    if (FLAT.has(pid) && recs && typeof recs === "object") EXTRA_RECS.set(pid, { ...EXTRA_RECS.get(pid), ...recs });
+}
+async function analysisOpenings(o, same) {
+  OPEN.civ = typeof o.civ === "string" ? o.civ : "";
+  OPEN.map = typeof o.map === "string" && /^(type|map):/.test(o.map) ? o.map : "";
+  const f = o.focus;
+  OPEN.focus = f && typeof f === "object" && f.pid != null
+    ? { pid: String(f.pid), gi: +f.gi || 0, build: typeof f.build === "string" ? f.build : undefined } : null;
+  const game = g => g && typeof g === "object" && Number.isSafeInteger(g.matchId) && Number.isSafeInteger(g.profileId);
+  for (const [pid, games] of listOf(o.lists))
+    if (Number.isSafeInteger(pid) && !OPEN.lists.has(pid)) OPEN.lists.set(pid, { games: listOf(games).filter(game), listing: false });
+  await Promise.all(listOf(o.games).map(async ([key, kept]) => {
+    if (typeof key !== "string" || !kept || typeof kept !== "object") return;
+    const shown = kept.shown || (kept.answer ? { ...kept.answer, ...(kept.sig === o.sig ? {} : { stale: true }) } : kept.failed);
+    if (!shown || typeof shown !== "object") return;
+    if (same && !OPEN.read.has(key)) OPEN.read.set(key, shown);
+    if (kept.shown) return;
+    const mine = await OPEN_DB.get(key);
+    if (!mine || (!mine.answer && kept.answer)) await OPEN_DB.put(key, kept);
+  }));
+}
+async function importAnalysis(file) {
+  const btn = $("#import");
+  if (btn.dataset.state === "busy") return;
+  fileSay(btn, "busy", "Importing…");
+  try {
+    let x = null;
+    try { x = unmarked(JSON.parse(await fileText(file))); } catch (e) {}
+    if (!x || x.scout !== ANALYSIS) throw new Error(`${file.name} is not an analysis`);
+    if (x.page !== (DATA.ladder || "rm")) throw new Error(`${file.name} is from the ${x.page === "ew" ? "EW" : "Random Map"} page`);
+    const levels = x.levels === levelsBuild(), o = x.openings && typeof x.openings === "object" ? x.openings : {};
+    // with no signature of its own yet, the page's build of the reader stands in for it
+    const same = OPEN_SIG_NOW ? o.sig === OPEN_SIG_NOW : x.reader === (DATA.cardsV || null);
+    if (levels) analysisLevels(x);
+    await analysisOpenings(o, same);
+    applyRoute(typeof x.route === "string" ? x.route : "#players");
+    syncRoute();
+    const lost = !levels && (listOf(x.refits).length || listOf(x.newcomers).length);
+    const left = [lost && `Levels left out: they were read against the page of ${dayName(x.asOf) || "another day"}`,
+      !same && listOf(o.games).length && "Openings wait for Read: another reader named them"].filter(Boolean);
+    fileSay(btn, lost ? "error" : "", left.length ? left.join(" · ") : "Import analysis");
+  } catch (e) {
+    fileSay(btn, "error", e.message);
+  }
+}
+$("#export").onclick = exportAnalysis;
+$("#import").onclick = () => $("#importfile").click();
+$("#importfile").onchange = e => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (f) importAnalysis(f);
+};
 
 renderPlayers();
 renderProfile();
