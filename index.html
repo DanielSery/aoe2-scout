@@ -1055,11 +1055,12 @@ svg.bdragging { user-select: none; }
       their strength with the build, in Elo against their usual over every build, the dashed line. The
       rating gap of each game is taken out. A build with few games is pulled toward their usual. A larger icon is a
       build they open with more often. Click an icon to show that build under the chart.</p>
-      <p>The detail buttons, 1 to 5, fold similar builds into one icon. Builds are similar when their names
-      share parts: M@A + Archers is close to Archers and to M@A. A build with few games folds first. 1 is one
-      icon a group, 5 every build. The middle one is picked at first: the most detail where each icon has three
-      games or more, and at most twelve icons. With few builds there are fewer buttons. A folded icon has a second
-      tile behind it, and its hover lists the builds in it.</p>
+      <p>The detail buttons fold builds into one icon. 1 is one icon a group and 3 every build. 2 is the
+      families. Feudal builds go by their first unit: Archers, Scouts, M@A or Skirms. So M@A into Archers is
+      an M@A build. FC splits into FC with an army and FC without one. Forward splits into tower rushes,
+      castle drops and douches. Dark Age splits into drushes and laming. Water, FI and Defense stay whole.
+      2 is picked at first. 3 is picked when there are at most twelve builds with three games each. A folded
+      icon has a second tile behind it, and its hover lists the builds in it.</p>
       <p>A team gets one line. Each build is drawn once, at the strength of the player who plays it best,
       of those who opened with it at least three times. Its frame has the colours of all of them. Point at
       a name above the chart, or pin it, to see only that player's builds. Two sides get one chart: across, how often your side opens with a build, up, how often theirs
@@ -5252,68 +5253,40 @@ const openPicked = (S = OPEN) => {
   const f = S.focus;
   return f && f.build && String(f.pid).split("+").every(id => (S.rows || []).some(r => String(r.p.pid) === id)) ? openFold(f.build, S) : "";
 };
-/* **Builds folded by likeness**, a level of detail (Daniel, 2026-11-13: "group by similarity? the default level could
-   be based on how many different openings are there and what evidence they have"). Two builds are as far apart as
-   the parts of their names they do not share (`openNameParts`), and 0.1 where only a "2x" or the order tells them
-   apart. A pair at a time folds, never across groups, the one costing least: its distance, the mean over its
-   builds' pairs by games, times the smaller one's games - so a build of a game or two joins its nearest kin before
-   two with evidence of their own join each other. Every build is the finest level, a build a group the coarsest. A
-   folded build goes by its commonest name, which is what `OPEN.fold` maps every name to.
-   Five steps are offered, not every level (Daniel, the same day: "fixed steps like 1-4 or 1-5 and preselected
-   sensible default"): a build a group, `openFoldAuto`'s level in the middle, every build, and halfway between
-   them by the number of icons, as a ratio; steps that land on one level are one. `OPEN.detail` is the step. */
+/* **Builds folded into families**, at three levels of detail (Daniel, 2026-11-13: "instead of the automatic
+   collapsing could we do the predefined collapsing"; it was folded by the likeness of the names for an hour): 1 a
+   group, 3 every build, and 2 each group's families (`openFamily`). Feudal by its first unit, as an M@A into
+   Archers, an M@A + Archers and an M@A belong together ("by the first unit"); FC by whether it made an army; Forward
+   by tower, castle or Town Centre; Dark Age by drush or laming; Water, FI and Defense whole. A fold goes by its
+   commonest build's name, which is what `OPEN.fold` maps every name to and whose icon it wears. */
 const OPEN_FOLD_MOST = 12;
 const openFold = (name, S = OPEN) => (S.fold && S.fold.get(name)) || name;
-const openNameParts = name => new Set((name || "").split(/ \+ | into /).flatMap(part => {
-  const p = part.replace(/^2x\s*/, "");
-  return p.startsWith("FC ") ? ["FC", p.slice(3)] : [p];
-}));
-// `counts` name -> {n, gi}; every level from the finest, each a list of folds, each its names commonest first
-function openFoldLevels(counts) {
-  const names = [...counts.keys()].sort((a, b) => counts.get(b).n - counts.get(a).n || a.length - b.length || a.localeCompare(b));
-  const parts = names.map(openNameParts), D = new Map(), pair = (i, j) => i < j ? `${i}|${j}` : `${j}|${i}`;
-  names.forEach((a, i) => names.forEach((b, j) => {
-    if (j <= i || counts.get(a).gi !== counts.get(b).gi) return;
-    const both = [...parts[i]].filter(p => parts[j].has(p)).length, any = parts[i].size + parts[j].size - both;
-    D.set(pair(i, j), both === any ? 0.1 : 1 - both / any);
-  }));
-  let folds = names.map((name, id) => ({ id, names: [name], n: counts.get(name).n, gi: counts.get(name).gi })), next = names.length;
-  const levels = [folds.map(f => f.names)];
-  for (;;) {
-    let best = null;
-    folds.forEach((A, a) => folds.forEach((B, b) => {
-      if (b <= a || A.gi !== B.gi) return;
-      const cost = D.get(pair(A.id, B.id)) * Math.min(A.n, B.n), big = Math.max(A.n, B.n);
-      if (!best || cost < best.cost - 1e-9 || (cost < best.cost + 1e-9 && big > best.big)) best = { A, B, cost, big };
-    }));
-    if (!best) break;
-    const { A, B } = best, m = { id: next++, names: [...A.names, ...B.names].sort((a, b) => counts.get(b).n - counts.get(a).n),
-                                 n: A.n + B.n, gi: A.gi };
-    folds = folds.filter(f => f !== A && f !== B);
-    folds.forEach(f => { if (f.gi === m.gi) D.set(pair(m.id, f.id), (A.n * D.get(pair(A.id, f.id)) + B.n * D.get(pair(B.id, f.id))) / m.n); });
-    folds.push(m);
-    levels.push(folds.map(f => f.names));
+const OPEN_FEUDAL_ARMY = { Archers: "Archers", Scouts: "Scouts", "Camel Scouts": "Scouts", "M@A": "M@A", Longswords: "M@A",
+  Skirms: "Skirms" };
+// what an FC names when it made no army
+const OPEN_NO_ARMY = new Set(["FC", "Boom", "Fish boom", "Castle"]);
+const OPEN_FAMILY_NAME = { Drush: "Drush builds", Laming: "Laming builds", Archers: "Archers builds", Scouts: "Scouts builds",
+  "M@A": "M@A builds", Skirms: "Skirms builds", Towers: "Tower rushes", Castle: "Castle drops", Douche: "Douches",
+  "FC army": "FC with an army", "FC boom": "FC without an army" };
+function openFamily(name, gi) {
+  const parts = name.replace(/^Laming \+ /, "").split(/ \+ | into /).map(p => p.replace(/^2x /, ""));
+  switch (OPEN_SHOWN[gi][0]) {
+    case "Dark Age aggression": return name.startsWith("Laming") ? "Laming" : "Drush";
+    // a Spears into Scouts is a Scouts build: the spears are no family of their own
+    case "Feudal aggression": return parts.map(p => OPEN_FEUDAL_ARMY[p]).find(Boolean) || parts[0];
+    case "Forward aggression": return /Douche/.test(name) ? "Douche" : /Castle drop/.test(name) ? "Castle" : "Towers";
+    case "Fast castle": return parts.flatMap(p => p.startsWith("FC ") ? ["FC", p.slice(3)] : [p])
+      .every(p => OPEN_NO_ARMY.has(p)) ? "FC boom" : "FC army";
+    default: return "";
   }
-  return levels;
 }
-// the level drawn first: the finest with at most `OPEN_FOLD_MOST` builds and none under `OPEN_REGULAR` games that could still fold
-function openFoldAuto(levels, counts) {
-  const gi = f => counts.get(f[0]).gi, n = f => f.reduce((t, name) => t + counts.get(name).n, 0);
-  const at = levels.findIndex(fs => fs.length <= OPEN_FOLD_MOST
-    && fs.every(f => n(f) >= OPEN_REGULAR || !fs.some(o => o !== f && gi(o) === gi(f))));
-  return at < 0 ? levels.length - 1 : at;
-}
-// the levels the steps stand for, coarsest first, and which of them is the default
-function openFoldSteps(levels, auto) {
-  const n = i => levels[i].length, all = n(0), groups = n(levels.length - 1), mid = n(auto);
-  const at = c => levels.length - 1 - (Math.round(c) - groups);
-  const steps = [...new Set([groups, Math.sqrt(groups * mid), mid, Math.sqrt(mid * all), all].map(at))];
-  return { steps, auto: steps.indexOf(auto) };
-}
+// what a name folds by at each level, coarsest first
+const OPEN_DETAIL = [["group", (name, gi) => String(gi)], ["family", (name, gi) => `${gi}|${openFamily(name, gi)}`],
+  ["build", name => name]];
 // what a build on the chart is called: its own name, or with how many more it stands for
 const openLabel = (b, S = OPEN) => {
   const f = S.folded && S.folded.get(b);
-  return !f || f.names.length < 2 ? b : f.whole ? `Every ${OPEN_SHOWN[f.gi][1]} build` : `${b} & ${f.names.length - 1} more`;
+  return !f || f.names.length < 2 ? b : f.whole ? `Every ${OPEN_SHOWN[f.gi][1]} build` : OPEN_FAMILY_NAME[f.family] || `${b} & ${f.names.length - 1} more`;
 };
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-opendetail]");
@@ -5688,18 +5661,28 @@ function panelOpenings(rows, y, S = OPEN) {
     counts.set(name, c);
   }));
   counts.forEach(c => { c.gi = [...c.by].sort((a, b) => b[1] - a[1])[0][0]; });
-  const levels = openFoldLevels(counts), auto = openFoldAuto(levels, counts);
-  const { steps, auto: autoStep } = openFoldSteps(levels, auto);
-  const step = S.detail == null ? autoStep : Math.min(steps.length - 1, S.detail), level = steps[step];
+  const names = [...counts.keys()].sort((a, b) => counts.get(b).n - counts.get(a).n || a.localeCompare(b));
+  const levels = OPEN_DETAIL.map(([, key]) => {
+    const folds = new Map();
+    names.forEach(name => { const k = key(name, counts.get(name).gi); folds.set(k, [...(folds.get(k) || []), name]); });
+    return [...folds.values()];
+  });
+  const inGroup = gi => names.filter(name => counts.get(name).gi === gi).length;
+  const alone = name => inGroup(counts.get(name).gi) < 2;
+  // the level drawn first: every build when they are at most `OPEN_FOLD_MOST` with `OPEN_REGULAR` games each, else families
+  const every = names.length <= OPEN_FOLD_MOST && names.every(name => counts.get(name).n >= OPEN_REGULAR || alone(name));
+  const step = S.detail == null ? (every ? 2 : 1) : S.detail;
   S.fold = new Map();
   S.folded = new Map();
-  levels[level].forEach(f => {
-    const gi = counts.get(f[0]).gi, inGroup = levels[0].filter(o => counts.get(o[0]).gi === gi).length;
+  levels[step].forEach(f => {
+    const gi = counts.get(f[0]).gi;
     f.forEach(name => S.fold.set(name, f[0]));
-    S.folded.set(f[0], { gi, names: f.map(name => [name, counts.get(name).n]), whole: f.length > 1 && f.length === inGroup });
+    S.folded.set(f[0], { gi, family: openFamily(f[0], gi), names: f.map(name => [name, counts.get(name).n]),
+                         whole: f.length > 1 && f.length === inGroup(gi) });
   });
-  const detail = steps.length < 2 ? "" : `<div class="seg sm" role="group" aria-label="Detail"${tipAttr("Detail")}>${steps.map((l, k) =>
-    `<button type="button" data-opendetail="${k}" aria-selected="${k === step}" aria-label="${levels[l].length} builds">${k + 1}</button>`).join("")}</div>`;
+  const detail = levels[0].length === levels[2].length ? "" : `<div class="seg sm" role="group" aria-label="Detail"${
+    tipAttr("Detail")}>${OPEN_DETAIL.map(([what], k) => `<button type="button" data-opendetail="${k}" aria-selected="${
+    k === step}" aria-label="A ${what} an icon">${k + 1}</button>`).join("")}</div>`;
   // with nothing read the button is all there is to the panel (Daniel, 2026-11-05: "should be better visible")
   if (!S.on && !anyRead && !S.err)
     return { title: "Openings", ctl: "",
