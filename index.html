@@ -1076,9 +1076,9 @@ svg.bdragging { user-select: none; }
       <p>Nothing is shown under the chart until you click a build. Then it is shown there, on one
       timeline, and the charts under Openings show only its games. Above the timeline you pick whose game
       it is, when several on a side play it, and which of their games. Click it again to show every build. For one player it is their
-      game of it beside a <span class="m-topn">top 100</span> game like it. When you pick one of their games, its enemies' builds are
-      shown beside it instead. For two sides it is each side's most ordinary game of
-      it, with a <span class="m-topn">top 100</span> game to pick beside them. Click a civilisation on the Civilizations chart or a
+      game of it beside what its enemies opened with in that game. For two sides it is each side's most ordinary game of
+      it, beside the first side's enemies in that game. A <span class="m-topn">top 100</span> game like it can be picked
+      instead of the enemies. Click a civilisation on the Civilizations chart or a
       map on the Maps chart to keep only the games played as it or on it. Games that match are read first.
       The Town Centre bar is the main Town Centre's work in one real game. It is not an average of
       many games. It is the game most of the others are like. Each thing is compared
@@ -1103,8 +1103,8 @@ svg.bdragging { user-select: none; }
       does, the panel waits ten minutes and goes on by itself. Empire Wars, treaty, regicide and other special games are left
       out, and so are games shorter than 8 minutes. A game the rules cannot name is just
       <b>Defense</b>.</p>
-      <p>For one player, the timeline shows your game of the build beside the <span class="m-topn">top 100</span>'s game most
-      like it. Pick another of their games above it, or click the picked one to see yours alone. Click a part of the top bar
+      <p>For one player, the timeline shows your game of the build beside what its enemies opened with in that game. Pick a
+      <span class="m-topn">top 100</span> game like yours above it instead, or click the picked one to see yours alone. Click a part of the top bar
       to see that kind of opening. Its most common build is shown first, and another can be picked
       from the list. Beside it you pick your game: the typical one, one of the ways you play it, or
       any single game. Click a name on the timeline to open that game as a build card. The <span class="m-topn">top 100</span>'s games of each build since
@@ -1113,7 +1113,7 @@ svg.bdragging { user-select: none; }
       your build's name are offered. An Archers build is matched with Archers, 2x Archers, M@A +
       Archers, Drush into Archers and the like. Five groups are offered, each by its game most like
       yours. Your build's own groups come first. Then come builds with the same army, then those with
-      only the same opener, such as a Trush. The first is shown. Alike is judged on the
+      only the same opener, such as a Trush. Alike is judged on the
       ages, the Town Centre's work, the techs, the buildings, the army and the villagers' work. Then one timeline shows
       your game and theirs: each Town Centre bar, with when each age was reached above it, and how
       much later or sooner yours was. A dashed line marks when they reached each age. Point anywhere on it to
@@ -5706,7 +5706,7 @@ const topBuilds = () => {
   T.unpacked = true;
   return T;
 };
-// which choice a build's comparison shows, by build: the game's enemies ("e"), the nearest, or another clicked
+// which choice a build's comparison shows, by build: the game's enemies ("e"), a top-100 game by its rank, or none (-1)
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-toppick]");
   if (!t || t.disabled) return;
@@ -5714,16 +5714,22 @@ document.addEventListener("click", e => {
   OPEN.topPick.set(key, t.getAttribute("aria-pressed") === "true" ? -1 : raw === "e" ? "e" : +raw);
   drawOpenings();
 });
-/* **A game picked from the list is compared with its enemies** (Daniel, 2026-11-13: "when you select specific
-   game you could see what enemy had as build, not top 100 by default"): each enemy's opening in the same game,
-   asked of the reader when first wanted - a kept answer, or the replay read again, which Microsoft may still
-   have - once a session. [{who, civ, pid, got}], `got` the answer or undefined while it is read. */
+/* Each enemy's opening in the game on show, asked of the reader when first wanted - a kept answer, or the
+   replay read again, which Microsoft may still have - whatever Read says. [{who, civ, pid, got}], `got` the
+   answer or undefined while it is read. A read that failed for now is asked again once `openWait`'s pause is
+   over, never during it, so a refusal is waited out here as in `openLoop`. */
 const OPEN_FOES = new Map();
 function openFoes(e, S = OPEN) {
   return ((S.read.get(openKey(e.g)) || {}).them || []).map(t => {
     const g = { matchId: e.g.matchId, profileId: t.pid }, key = openKey(g);
-    if (!S.read.has(key) && !OPEN_FOES.has(key))
-      OPEN_FOES.set(key, openOne(g, S).catch(() => {}).finally(() => drawOpenings()));
+    if (!S.read.has(key) && !OPEN_FOES.has(key) && Date.now() >= S.until)
+      OPEN_FOES.set(key, openOne(g, S).catch(() => {}).finally(() => {
+        if (!S.read.has(key)) {
+          OPEN_FOES.delete(key);
+          setTimeout(drawOpenings, Math.max(0, S.until - Date.now()) + 100);
+        }
+        drawOpenings();
+      }));
     return { who: t.who || String(t.pid), civ: t.civ, pid: t.pid, got: S.read.get(key) };
   });
 }
@@ -6477,38 +6483,36 @@ function panelOpenings(rows, y, S = OPEN) {
     if (!xs.some(x => own(x).length)) return "";
     const newest = (a, b) => (b.g.started || "").localeCompare(a.g.started || "");
     const nameOf = e => openFold(e.o.name || "Unnamed", S);
-    /* Under a build's own game, the one top-100 game it is compared with, and the four next nearest to
-       pick instead: its Town Centre bar, how alike it is, its links and the group of games it stands
-       for, the villagers' work at the Feudal click, halfway to Feudal and at the Castle click, and every
-       measure the two differ on by section, the player's coloured better or worse than theirs. To the
-       later Castle landing of the two at first, everything to 25:00 a click away: this is about the
-       opening. The top's habit, not a rule: a difference is something to look at. */
+    /* The game on show is compared with its enemies in that game, whichever game it is (Daniel, 2026-11-20:
+       "I do not want to compare with top players by default ... you should be able to select the top player
+       as option instead of the oponent"); the top 100's five nearest are chips to pick instead. */
     /* The player's own game compared (Daniel, 2026-11-11: "we should be able to select any variant of build
        you have played"): the build's most ordinary game, the centre of another of its ways (`similar`), or
        any game of it, from the list over it (`oneView`). Few words (Daniel: "Simplify the UI, so there are not
        so many texts, simplify the controls, make that there are no scrollbars"): a chip a choice, the top's
        by player and build, the player's by way; the players' names on the timeline, theirs opening their
        card in Builds. */
-    // `extra` are more players' games of the build, drawn under the first and compared, as it is, with the top 100's
+    // `extra` are more players' games of the build, drawn under the first; the first's enemies are the ones shown
     const topRows = (b, pick, myWays = [], bs = [], extra = [], who = xs[0], key = `${who.p.pid}|${b}`) => {
       const sel = S.myPick.get(key) || {};
       const game = sel.match != null && bs.find(e => String(e.g.matchId) === sel.match);
       const mine = game || (sel.way != null && myWays[sel.way] ? myWays[sel.way].e : pick);
-      const near = nearestGames(mine.o, who.p.pid), foes = game ? openFoes(game) : [];
+      const near = nearestGames(mine.o, who.p.pid), foes = openFoes(mine);
       if (!near.length && !foes.length) return "";
-      // a game's enemies picked at first, else the nearest (Daniel, 2026-11-11: "show the most similar top100 by
-      // default"; for an hour none was), -1 once its chip is clicked off
-      const picked = S.topPick.has(key) ? S.topPick.get(key) : foes.length ? "e" : 0;
+      // a top-100 game is never picked unasked, so a game with no enemies listed is shown alone
+      const picked = S.topPick.has(key) ? S.topPick.get(key) : foes.length ? "e" : -1;
       const vsFoes = picked === "e" && foes.length > 0;
-      const T = topBuilds(), at = vsFoes || picked < 0 || !near.length ? -1 : Math.min(picked, near.length - 1), g = at < 0 ? null : near[at].g;
+      // `picked` stays "e" when the game on show moves to one with no enemies listed, so only a number indexes `near`
+      const T = topBuilds(), at = vsFoes || !(picked >= 0) || !near.length ? -1 : Math.min(picked, near.length - 1), g = at < 0 ? null : near[at].g;
       const me = esc(who.p.name), them = g && esc(g.who);
       const read = foes.filter(x => x.got && x.got.me && !x.got.error), reading = foes.some(x => !x.got);
       const ways = x => T.variants.filter(w => w.board === x.board && w.build === x.build).length;
       const civOf = o => civIcon(o.civ || "") ? `<img class="otopciv" src="${civIcon(o.civ)}" alt=""${tipAttr(esc(o.civ))}>` : "";
       const chips = near.map((x, k) => `<button type="button" class="ochip" data-toppick="${esc(key)}#${k}" aria-pressed="${k === at}">${
         civOf(x.g.o)}${esc(x.g.who)} <span class="mk">${esc(x.v.build)}${ways(x.v) > 1 ? ` ${x.v.way + 1}` : ""}</span></button>`).join("");
+      const foesGone = !read.length && !reading;
       const foeChip = !foes.length ? "" : `<span class="k">${foes.length > 1 ? "Enemies" : "Enemy"}</span><button type="button" class="ochip"
-          data-toppick="${esc(key)}#e" aria-pressed="${vsFoes}"${!read.length && !reading ? " disabled" : ""}>${foes.map(x => `${
+          data-toppick="${esc(key)}#e" aria-pressed="${vsFoes && !foesGone}"${foesGone ? " disabled" : ""}>${foes.map(x => `${
           civIcon(x.civ || "") ? `<img class="otopciv" src="${civIcon(x.civ)}" alt="">` : ""}${esc(x.who)}${
           x.got && x.got.me ? ` <span class="mk">${esc(x.got.me.name || "Unnamed")}</span>` : ""}`).join(" · ")}${
           reading ? ` <span class="mk">…</span>` : !read.length ? ` <span class="mk">no replay</span>` : ""}</button>`;
@@ -6517,10 +6521,11 @@ function panelOpenings(rows, y, S = OPEN) {
       const named = (who, e) => ({ who, o: e.o, name: `<button type="button" class="otlname" data-opencard="${e.g.matchId}|${
                       e.g.profileId}">${civOf(e.o)}${who}</button>` });
       const others = vsFoes ? read.map(x => ({ who: esc(x.who), o: x.got.me, name: `<button type="button" class="otlname" data-opencard="${
-          game.g.matchId}|${x.pid}">${civOf(x.got.me)}${esc(x.who)}</button>` }))
+          mine.g.matchId}|${x.pid}">${civOf(x.got.me)}${esc(x.who)}</button>` }))
         : g ? [{ who: them, o: g.o, name: `<button type="button" class="otlname" data-opencard="${g.m}|${g.a}">${civOf(g.o)}${them}</button>` }] : [];
       const two_ = [named(me, mine), ...extra.map(x => named(esc(x.who), x.e)), ...others];
-      const ours = two_.length - others.length;
+      // the enemies played the first game only, so another side's game is not measured against them
+      const ours = vsFoes ? 1 : two_.length - others.length;
       // what the player's ages and techs are measured against: the top 100's game, or the one enemy
       const cmp = others.length === 1 ? others[0].o : null;
       /* What each did and when, on one timeline (Daniel, 2026-11-11: "There needs to be better shown the
@@ -6652,7 +6657,7 @@ function panelOpenings(rows, y, S = OPEN) {
       return head + `<tr class="otopd"><td colspan="5">${timeline}</td></tr>`;
     };
     /* one player: the category's commonest build, or the one picked, the player's game of it picked
-       beside it, and under them the top 100's nearest and the timeline */
+       beside it, and under them its enemies, or a top-100 game picked instead, on the timeline */
     /* The build is the one clicked on the chart (Daniel, 2026-11-12: "there does not need to be the openings
        combo box, but you should be able to select the player of the team when multiple and also ideally even
        specific game of that player"): who on the side, when more than one played it, and which game. */
@@ -6685,8 +6690,8 @@ function panelOpenings(rows, y, S = OPEN) {
     /* Two sides (Daniel, 2026-11-12: "We should fully remove the table from the Openings panel ... When
        comparing two players/teams it should show you the comparison how it is played by the team 1 / team
        2 and you should be able to select the top 100 players to look on the build"): the build picked on
-       the chart, or from the list, each side's most ordinary game of it on one timeline, and the top 100's
-       nearest to pick beside them. A side that never played it has no row. */
+       the chart, or from the list, each side's most ordinary game of it on one timeline, beside the first
+       side's enemies in its game or a top-100 game picked instead. A side that never played it has no row. */
     const pairView = () => {
       const all = xs.flatMap(own);
       if (!all.length) return "";
