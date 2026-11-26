@@ -403,7 +403,6 @@ h2:first-child { margin-top: 0; }
 .trend.down { color: var(--crit); }
 #pfield td.ev { white-space: nowrap; }
 #pfield td.ev svg { display: block; }
-#pfield td.gm { white-space: nowrap; font-size: 12px; }
 #pfield th svg.pbar { display: block; }
 #pfield .acc { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 3px; }
 #pfield .flag, #pcountry .flag { display: block; border-radius: 2px; box-shadow: 0 0 0 1px var(--border); }
@@ -2160,8 +2159,6 @@ const PCOLS = [
   { key: "se", label: "", plain: true, cls: "l" },
   { key: "bar", label: "", plain: true },
   { key: "ev", label: "Evidence", by: p => HAS(p) ? PEVID(p) : -Infinity, dir: -1 },
-  { key: "gm", label: "Games", title: "Games played of each kind; sorts by the team share", by: p => {
-      const [t, so] = PLAYED(p); return t + so ? t / (t + so) : -Infinity; }, dir: -1 },
   { key: "add", label: "", plain: true },
 ];
 let PSORT = "lv", PDIR = -1, PSHOW = 200;
@@ -2239,10 +2236,6 @@ function pevid(p, tone) {
        <rect x="0" y="14" width="${pw.toFixed(1)}" height="6" fill="var(--ink-2)" opacity="${PARTNER(p) > PARTNER_MAX ? ".9" : ".45"}"/>
        <line x1="${rule.toFixed(1)}" y1="12" x2="${rule.toFixed(1)}" y2="22" stroke="var(--ink)" stroke-width="1"/>`)
     + `</svg>`;
-}
-function pgames(p) {
-  const [t, so] = PLAYED(p), n = (v, more) => more ? `<b>${v}</b>` : `${v}`;
-  return t + so ? `${n(t, t >= so)} <span class="mk">team</span> · ${n(so, so > t)} <span class="mk">${SOLO_NAME}</span>` : "–";
 }
 // what the name cell's own hover used to say, now that the whole row has one card
 const whoLine = p => `<br><span class="mk">${[p.country && esc(countryName(p.country)),
@@ -2343,7 +2336,6 @@ function renderPlayers() {
           ? `<span class="mk"> ${cell[2] || 0}g${off}</span>` : trendMark(p)}` : ""}</td>`
       + `<td class="l lvbar">${has ? pbar(p, x, ticks, tone, PBW, PMAP ? cell : null) : ""}</td>`
       + `<td class="ev">${has ? pevid(p, tone) : "–"}</td>`
-      + `<td class="l gm">${pgames(p)}</td>`
       + `<td><button class="add" data-padd="${esc(p.teamKey + "·" + p.name)}" title="Open in Compare">⊕</button></td>`
       + `</tr>`;
   }).join("");
@@ -4878,12 +4870,11 @@ function panelEvidence(rows, y, o = {}) {
   rows.forEach(({ p, tone }, i) => {
     // beside A, the bars sit level with A's dot
     const yy = L.at(i) + 12, col = `var(${tone})`;
-    const [gt, gs] = PLAYED(p), games = gt + gs, gshare = games ? 100 * gt / games : 0;
-    if (games) s += `<rect x="${x(0)}" y="${yy - 10}" width="${x(gshare) - x(0)}" height="9" fill="${col}" opacity=".45"/>`
-       + `<rect x="${x(gshare)}" y="${yy - 10}" width="${x(100) - x(gshare)}" height="9" fill="${col}" opacity=".12"/>`
-       + `<text x="${x(0) + 5}" y="${yy - 2.8}" font-size="8.5" fill="var(--ink)">games: team ${gshare.toFixed(0)}% · ${gt}</text>`
-       + `<text x="${x(100) - 5}" y="${yy - 2.8}" font-size="8.5" fill="var(--ink)" text-anchor="end">${
-           SOLO_NAME} ${(100 - gshare).toFixed(0)}% · ${gs}</text>`;
+    const [gt, gs] = PLAYED(p), count = (v, more) => `<tspan fill="var(--ink)"${more ? ` font-weight="700"` : ""}>${v}</tspan>`;
+    // the axis' grid lines run under this line, so it carries a halo of the panel's own colour
+    if (gt + gs) s += `<text x="${x(0)}" y="${yy - 1.5}" font-size="10" fill="var(--muted)" paint-order="stroke"
+            stroke="var(--surface)" stroke-width="3" stroke-linejoin="round">games ${count(gt, gt >= gs)} team · ${
+            count(gs, gs > gt)} ${SOLO_NAME}</text>`;
     const [et, es] = EVID(p), tot = et + es;
     const share = tot ? 100 * et / tot : 0;
     s += `<rect x="${x(0)}" y="${yy + 2}" width="${x(share) - x(0)}" height="12" fill="${col}"/>`
